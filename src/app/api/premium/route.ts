@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { withX402 } from "@x402/next";
-import { server, payToAddress, ARC_NETWORK } from "@/lib/x402";
+import { server, getPayToAddress, ARC_NETWORK } from "@/lib/x402";
 import { ARC_CONTRACTS } from "@/lib/arc";
 
 // The actual handler that returns premium content
@@ -34,27 +34,31 @@ async function premiumHandler(request: NextRequest) {
   });
 }
 
-// Wrap with x402 payment protection
-export const GET = withX402(
-  premiumHandler,
-  {
-    accepts: [
-      {
-        scheme: "exact" as const,
-        network: ARC_NETWORK,
-        payTo: payToAddress,
-        price: "$0.01", // 0.01 USDC
-        extra: {
-          // EVM exact scheme uses these for EIP-712 domain
-          name: "USDC",
-          version: "2",
-          // Asset address for Arc USDC
-          asset: ARC_CONTRACTS.USDC,
+// Dynamic x402 wrapper - fetches merchant address from Circle on each request
+export async function GET(req: NextRequest) {
+  const payToAddress = await getPayToAddress();
+
+  const wrappedHandler = withX402(
+    premiumHandler,
+    {
+      accepts: [
+        {
+          scheme: "exact" as const,
+          network: ARC_NETWORK,
+          payTo: payToAddress,
+          price: "$0.01",
+          extra: {
+            name: "USDC",
+            version: "2",
+            asset: ARC_CONTRACTS.USDC,
+          },
         },
-      },
-    ],
-    description: "Premium AI insight about Arc blockchain",
-    mimeType: "application/json",
-  },
-  server,
-);
+      ],
+      description: "Premium AI insight about Arc blockchain",
+      mimeType: "application/json",
+    },
+    server,
+  );
+
+  return wrappedHandler(req);
+}

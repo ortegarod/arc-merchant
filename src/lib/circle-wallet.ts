@@ -35,11 +35,14 @@ export const circleClient = initiateDeveloperControlledWalletsClient({
 export async function createAgentWallet(agentId: string) {
   // Check if wallet already exists on ARC-TESTNET
   const existingWallets = await listWallets();
-  const arcWallet = existingWallets.find(
-    (w: any) => w.blockchain === 'ARC-TESTNET' && w.accountType === 'EOA'
-  );
 
-  if (arcWallet) {
+  // Sort by ID for deterministic selection (same order as getMerchantWallet)
+  const arcWallets = existingWallets
+    .filter((w: any) => w.blockchain === 'ARC-TESTNET' && w.accountType === 'EOA')
+    .sort((a: any, b: any) => a.id.localeCompare(b.id));
+
+  if (arcWallets.length > 0) {
+    const arcWallet = arcWallets[0];
     console.log(`Using existing wallet for ${agentId}`);
     console.log(`   Address: ${arcWallet.address}`);
     console.log(`   Wallet ID: ${arcWallet.id}`);
@@ -184,4 +187,83 @@ export async function signPaymentAuthorization(
 export async function listWallets() {
   const response = await circleClient.listWallets({});
   return response.data?.wallets || [];
+}
+
+/**
+ * Get a specific wallet by ID
+ */
+export async function getWallet(walletId: string) {
+  const response = await circleClient.getWallet({ id: walletId });
+  return response.data?.wallet;
+}
+
+/**
+ * Request testnet tokens (USDC, EURC, native) from the faucet
+ */
+export async function requestTestnetTokens(
+  address: string,
+  options: { usdc?: boolean; eurc?: boolean; native?: boolean } = { usdc: true }
+) {
+  const response = await circleClient.requestTestnetTokens({
+    address,
+    blockchain: 'ARC-TESTNET',
+    usdc: options.usdc ?? true,
+    eurc: options.eurc ?? false,
+    native: options.native ?? false,
+  });
+  return response;
+}
+
+/**
+ * Transfer USDC to another address on Arc
+ */
+export async function transferUSDC(
+  walletAddress: string,
+  destinationAddress: string,
+  amount: string // Human-readable amount like "1.50"
+) {
+  const response = await circleClient.createTransaction({
+    blockchain: 'ARC-TESTNET' as const,
+    walletAddress,
+    tokenAddress: '0x3600000000000000000000000000000000000000', // Arc USDC (native precompile)
+    amount: [amount],
+    destinationAddress,
+    fee: {
+      type: 'level' as const,
+      config: {
+        feeLevel: 'MEDIUM' as const,
+      },
+    },
+  });
+  return response.data;
+}
+
+/**
+ * Get the merchant wallet for receiving x402 payments
+ *
+ * Retrieves an existing Circle wallet. Does NOT create one.
+ * If no merchant wallet exists, throws an error.
+ *
+ * Sorts wallets by ID to ensure deterministic selection.
+ */
+export async function getMerchantWallet(): Promise<{ id: string; address: `0x${string}` }> {
+  const wallets = await listWallets();
+
+  // Filter to Arc testnet EOA wallets and sort by ID for deterministic selection
+  const arcWallets = wallets
+    .filter((w: any) => w.blockchain === 'ARC-TESTNET' && w.accountType === 'EOA')
+    .sort((a: any, b: any) => a.id.localeCompare(b.id));
+
+  if (arcWallets.length < 2) {
+    throw new Error('Need at least 2 wallets (agent + merchant). Create more using arc_create_wallet MCP tool.');
+  }
+
+  // Use the SECOND wallet as merchant (first is used by agent for payments)
+  const merchant = arcWallets[1];
+  console.log(`Merchant wallet: ${merchant.address} (ID: ${merchant.id})`);
+
+  return {
+    id: merchant.id,
+    address: merchant.address as `0x${string}`,
+  };
 }

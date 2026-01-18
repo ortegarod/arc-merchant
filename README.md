@@ -28,7 +28,18 @@ Our approach: AI agent calls Circle SDK → Circle signs → **SECURE**
 
 After completing setup below, use this project as an MCP server to let AI assistants autonomously make payments.
 
-**Tools available**: `arc_create_wallet`, `arc_get_balance`, `arc_pay_for_content`, `arc_get_transaction`
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `arc_create_wallet` | Create or get existing Circle wallet for an AI agent |
+| `arc_get_balance` | Check USDC/EURC token balances |
+| `arc_list_wallets` | List all Circle wallets in your account |
+| `arc_get_wallet` | Get details for a specific wallet |
+| `arc_request_testnet_tokens` | Fund wallet from Circle faucet (no website needed) |
+| `arc_transfer` | Direct USDC transfer to another address |
+| `arc_pay_for_content` | Pay for paywalled content via x402 protocol |
+| `arc_get_transaction` | Get transaction details and explorer link |
 
 See **Step 6** in Setup for detailed instructions.
 
@@ -97,25 +108,24 @@ To get your wallet address and fund it:
 
 ```bash
 # Add MCP server (see step 6 below)
-claude mcp add arc-agent-payments -- npm run mcp
+claude mcp add arc-mcp-server -- npm run mcp
 
 # In a Claude Code session, ask:
-# "Create a wallet for my-agent and show me the address"
-
-# Then fund it with Arc testnet USDC:
-# - Use the Circle faucet: https://faucet.circle.com
-# - Or send from another test wallet
+# "Create a wallet for my-agent and request testnet tokens"
 ```
+
+The `arc_request_testnet_tokens` tool funds your wallet directly from Circle's faucet - no need to visit a website.
 
 ### 6. Add MCP Server to Claude Code
 
 ```bash
 # Register the MCP server
-claude mcp add arc-agent-payments -- npm run mcp
+claude mcp add arc-mcp-server -- npm run mcp
 ```
 
 This makes the payment tools available in Claude Code sessions. Start a new session and try:
-- "Create a wallet and check my balance"
+- "Create a wallet and request testnet tokens"
+- "Check my balance"
 - "Pay for http://localhost:3000/api/article/arc-blockchain-guide"
 
 ## Running

@@ -5,17 +5,13 @@
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { ARC_CONTRACTS } from "./arc";
+import { getMerchantWallet } from "./circle-wallet";
 
 // Arc network identifier
 export const ARC_NETWORK = "eip155:5042002";
 
 // Facilitator URL (our facilitator server)
 const facilitatorUrl = process.env.FACILITATOR_URL || "http://localhost:4022";
-
-// Payment receiver address
-export const payToAddress =
-  (process.env.PAY_TO_ADDRESS as `0x${string}`) ||
-  "0x897F9dDD37f929F874B3c3FaD3F0682ff561c0D7";
 
 // Create facilitator client and resource server
 const facilitatorClient = new HTTPFacilitatorClient({ url: facilitatorUrl });
@@ -45,9 +41,19 @@ evmScheme.registerMoneyParser(async (amount: number, network: string) => {
 server.register(ARC_NETWORK, evmScheme);
 
 /**
+ * Get merchant wallet address from Circle SDK
+ */
+export async function getPayToAddress(): Promise<`0x${string}`> {
+  const merchant = await getMerchantWallet();
+  return merchant.address;
+}
+
+/**
  * Create payment config for an endpoint
  */
-export function createPaymentConfig(priceUsd: string, description: string) {
+export async function createPaymentConfig(priceUsd: string, description: string) {
+  const payToAddress = await getPayToAddress();
+
   return {
     accepts: [
       {
@@ -66,3 +72,4 @@ export function createPaymentConfig(priceUsd: string, description: string) {
     mimeType: "application/json",
   };
 }
+

@@ -25,13 +25,13 @@ dotenv.config({ path: ".env.local" });
 const PORT = process.env.PORT || "4022";
 const ARC_NETWORK = "eip155:5042002";
 
-if (!process.env.ARC_WALLET_KEY) {
-  console.error("❌ ARC_WALLET_KEY environment variable is required");
+if (!process.env.FACILITATOR_WALLET_KEY) {
+  console.error("❌ FACILITATOR_WALLET_KEY environment variable is required");
   process.exit(1);
 }
 
 // Initialize account from private key
-const account = privateKeyToAccount(process.env.ARC_WALLET_KEY as `0x${string}`);
+const account = privateKeyToAccount(process.env.FACILITATOR_WALLET_KEY as `0x${string}`);
 console.log(`🔑 Facilitator wallet: ${account.address}`);
 
 // Create viem client

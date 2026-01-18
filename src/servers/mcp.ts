@@ -7,9 +7,13 @@
  *
  * Tools provided:
  * - arc_create_wallet: Create or get Circle wallet for AI agent
- * - arc_get_balance: Check USDC balance
+ * - arc_get_balance: Check USDC/EURC balance
  * - arc_pay_for_content: Pay for paywalled resources via x402
  * - arc_get_transaction: View transaction details on Arc
+ * - arc_list_wallets: List all Circle wallets
+ * - arc_get_wallet: Get details for a specific wallet
+ * - arc_request_testnet_tokens: Fund wallet from Circle faucet
+ * - arc_transfer: Direct USDC transfer to another address
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -24,6 +28,10 @@ import {
   createAgentWallet,
   getWalletBalance,
   signPaymentAuthorization,
+  listWallets,
+  getWallet,
+  requestTestnetTokens,
+  transferUSDC,
 } from '../lib/circle-wallet.js';
 import { ARC_CONTRACTS } from '../lib/arc.js';
 import dotenv from 'dotenv';
@@ -33,7 +41,7 @@ dotenv.config({ path: '.env.local' });
 // MCP Server
 const server = new Server(
   {
-    name: 'arc-agent-payments',
+    name: 'arc-mcp-server',
     version: '1.0.0',
   },
   {
@@ -114,6 +122,83 @@ const TOOLS: Tool[] = [
       required: ['tx_hash'],
     },
   },
+  {
+    name: 'arc_list_wallets',
+    description:
+      'List all Circle wallets. Shows wallet IDs, addresses, and blockchains for all wallets in your account.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'arc_get_wallet',
+    description:
+      'Get details for a specific Circle wallet by ID.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        wallet_id: {
+          type: 'string',
+          description: 'Circle wallet ID',
+        },
+      },
+      required: ['wallet_id'],
+    },
+  },
+  {
+    name: 'arc_request_testnet_tokens',
+    description:
+      'Request testnet tokens (USDC, EURC, native) from Circle faucet. Funds your wallet directly without leaving Claude Code.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        address: {
+          type: 'string',
+          description: 'Wallet address to fund (0x...)',
+        },
+        usdc: {
+          type: 'boolean',
+          description: 'Request USDC tokens (default: true)',
+          default: true,
+        },
+        eurc: {
+          type: 'boolean',
+          description: 'Request EURC tokens (default: false)',
+          default: false,
+        },
+        native: {
+          type: 'boolean',
+          description: 'Request native tokens (default: false)',
+          default: false,
+        },
+      },
+      required: ['address'],
+    },
+  },
+  {
+    name: 'arc_transfer',
+    description:
+      'Transfer USDC to another address on Arc blockchain. This is a direct on-chain transfer (not x402 payment).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from_address: {
+          type: 'string',
+          description: 'Sender wallet address (0x...)',
+        },
+        to_address: {
+          type: 'string',
+          description: 'Recipient address (0x...)',
+        },
+        amount: {
+          type: 'string',
+          description: 'Amount to send in USDC (e.g., "1.50")',
+        },
+      },
+      required: ['from_address', 'to_address', 'amount'],
+    },
+  },
 ];
 
 // Tool handlers
@@ -153,13 +238,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const balances = await getWalletBalance(wallet_id);
 
         // Format balances for readability
+        // Note: Circle SDK returns amount already in human-readable format
         const formatted = balances.map((b: any) => ({
           token: b.token?.symbol || 'Unknown',
           amount: b.amount || '0',
-          decimals: b.token?.decimals || 6,
-          human_readable: (
-            parseFloat(b.amount || '0') / Math.pow(10, b.token?.decimals || 6)
-          ).toFixed(6),
         }));
 
         return {
@@ -344,6 +426,118 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 transaction: tx_hash,
                 explorer_url: `https://testnet.arcscan.app/tx/${tx_hash}`,
                 message: 'View transaction details on Arc Explorer',
+              }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'arc_list_wallets': {
+        const wallets = await listWallets();
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                count: wallets.length,
+                wallets: wallets.map((w: any) => ({
+                  id: w.id,
+                  address: w.address,
+                  blockchain: w.blockchain,
+                  state: w.state,
+                  accountType: w.accountType,
+                })),
+              }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'arc_get_wallet': {
+        const { wallet_id } = args as { wallet_id: string };
+
+        const wallet = await getWallet(wallet_id);
+
+        if (!wallet) {
+          throw new Error(`Wallet ${wallet_id} not found`);
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                wallet: {
+                  id: wallet.id,
+                  address: wallet.address,
+                  blockchain: wallet.blockchain,
+                  state: wallet.state,
+                  createDate: wallet.createDate,
+                },
+              }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'arc_request_testnet_tokens': {
+        const { address, usdc, eurc, native } = args as {
+          address: string;
+          usdc?: boolean;
+          eurc?: boolean;
+          native?: boolean;
+        };
+
+        await requestTestnetTokens(address, {
+          usdc: usdc ?? true,
+          eurc: eurc ?? false,
+          native: native ?? false,
+        });
+
+        const tokensRequested = [];
+        if (usdc ?? true) tokensRequested.push('USDC');
+        if (eurc) tokensRequested.push('EURC');
+        if (native) tokensRequested.push('native');
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                address,
+                tokens_requested: tokensRequested,
+                message: `Testnet tokens requested for ${address}. May take a moment to arrive.`,
+              }, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'arc_transfer': {
+        const { from_address, to_address, amount } = args as {
+          from_address: string;
+          to_address: string;
+          amount: string;
+        };
+
+        const result = await transferUSDC(from_address, to_address, amount);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                from: from_address,
+                to: to_address,
+                amount: `${amount} USDC`,
+                transaction_id: result?.id,
+                state: result?.state,
+                message: `Transfer initiated. Transaction ID: ${result?.id}`,
               }, null, 2),
             },
           ],
