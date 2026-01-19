@@ -166,7 +166,7 @@ export default function MerchantDashboard() {
                           <code className="text-sm text-zinc-400">/{article.slug}</code>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="text-green-400">{article.price}</span>
+                          <span className="text-green-400">${article.priceUsd}</span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className={article.sales > 0 ? 'text-blue-400' : 'text-zinc-600'}>

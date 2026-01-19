@@ -19,15 +19,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: resolve(__dirname, '../.env.local') });
 
-const apiKey = process.env.CIRCLE_API_KEY;
-
-if (!apiKey) {
-  console.error('❌ CIRCLE_API_KEY not found in .env.local');
-  console.error('Add your Circle API key first, then run this script again.');
-  process.exit(1);
-}
-
 async function setupCircle() {
+  const apiKey = process.env.CIRCLE_API_KEY;
+  if (!apiKey) {
+    throw new Error('CIRCLE_API_KEY not found in .env.local. Add your Circle API key first.')
+  }
   console.log('🔐 Circle Developer-Controlled Wallets Setup\n');
 
   // Step 1: Generate Entity Secret (SDK's generateEntitySecret only prints, doesn't return)

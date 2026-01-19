@@ -1,16 +1,15 @@
 /**
  * Article data for x402 paywall demo
- * AI agents and web crawlers must pay to access article content
  */
 
 export interface Article {
   slug: string
   title: string
   description: string
-  price: string // USD price (e.g., "$0.01")
+  priceUsd: number
   author: string
   publishedAt: string
-  content: string // Markdown content
+  content: string
   tags: string[]
 }
 
@@ -19,45 +18,67 @@ export const articles: Article[] = [
     slug: 'arc-blockchain-guide',
     title: 'The Complete Guide to Arc Blockchain',
     description: 'Everything you need to know about Circle\'s Arc L1 blockchain',
-    price: '$0.01',
+    priceUsd: 0.01,
     author: 'Arc Research Team',
     publishedAt: '2026-01-15',
     tags: ['arc', 'blockchain', 'circle'],
     content: `# The Complete Guide to Arc Blockchain
 
-[Placeholder content - add your article here]
+Arc is Circle's purpose-built L1 blockchain with USDC as the native gas token.
 
-Arc is Circle's native blockchain with USDC as the gas token...
+## Key Features
+- EVM compatible
+- Sub-second finality
+- USDC-native gas fees
+- Built for stablecoin finance
+
+## Getting Started
+Connect to Arc Testnet using chain ID 5042002 and RPC endpoint https://rpc.testnet.arc.network
 `,
   },
   {
     slug: 'x402-micropayments',
     title: 'x402: The Future of Web Micropayments',
-    description: 'How x402 enables seamless micropayments for AI agents and content creators',
-    price: '$0.01',
+    description: 'How x402 enables seamless micropayments for AI agents',
+    priceUsd: 0.01,
     author: 'x402 Protocol Team',
     publishedAt: '2026-01-16',
     tags: ['x402', 'payments', 'web3'],
     content: `# x402: The Future of Web Micropayments
 
-[Placeholder content - add your article here]
+x402 revives HTTP 402 Payment Required for the AI agent era.
 
-The x402 protocol enables gasless micropayments...
+## How It Works
+1. Client requests resource
+2. Server returns 402 with payment requirements
+3. Client signs payment authorization
+4. Server verifies and settles on-chain
+5. Content delivered
+
+## Why It Matters
+AI agents can now autonomously pay for APIs, data, and content without human approval.
 `,
   },
   {
     slug: 'circle-gateway-guide',
     title: 'Circle Gateway: Unified USDC Across Chains',
-    description: 'Learn how Circle Gateway provides instant cross-chain USDC transfers',
-    price: '$0.01',
+    description: 'Instant cross-chain USDC transfers with Circle Gateway',
+    priceUsd: 0.01,
     author: 'Circle Developer Relations',
     publishedAt: '2026-01-17',
     tags: ['circle', 'gateway', 'usdc'],
     content: `# Circle Gateway: Unified USDC Across Chains
 
-[Placeholder content - add your article here]
+Gateway provides a single USDC balance accessible across multiple blockchains.
 
-Circle Gateway enables unified USDC balance across multiple chains...
+## Benefits
+- No bridging required
+- Instant settlement
+- Chain-abstracted balance
+- Lower fees than traditional bridges
+
+## Supported Chains
+Ethereum, Base, Arbitrum, Polygon, Solana, and Arc.
 `,
   },
 ]
