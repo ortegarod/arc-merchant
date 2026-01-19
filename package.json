@@ -10,7 +10,8 @@
     "facilitator": "tsx src/servers/facilitator.ts",
     "mcp": "tsx src/servers/mcp.ts",
     "test-pay": "tsx scripts/test-payment.ts",
-    "test-article": "tsx scripts/test-article.ts"
+    "test-article": "tsx scripts/test-article.ts",
+    "agent": "tsx scripts/run-agent.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
