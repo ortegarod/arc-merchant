@@ -5,8 +5,8 @@
  * Includes actual on-chain balance from Circle SDK.
  */
 
-import { NextResponse } from 'next/server'
-import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, getCachedWallet } from '@/lib/stats'
+import { NextRequest, NextResponse } from 'next/server'
+import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, getCachedWallet, updatePaymentTxHash } from '@/lib/stats'
 import { getMerchantWallet, getWalletBalance } from '@/lib/circle-wallet'
 
 export const dynamic = 'force-dynamic'
@@ -45,4 +45,40 @@ export async function GET() {
     merchantWallet,
     onChainBalance,
   })
+}
+
+/**
+ * POST /api/stats - Update payment with transaction hash
+ *
+ * Called by MCP client after settlement to record the txHash.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const { slug, payer, txHash } = await req.json()
+
+    if (!slug || !payer || !txHash) {
+      return NextResponse.json(
+        { error: 'Missing required fields: slug, payer, txHash' },
+        { status: 400 }
+      )
+    }
+
+    const updated = updatePaymentTxHash(slug, payer, txHash)
+
+    if (updated) {
+      console.log(`📊 Updated txHash for ${slug}: ${txHash}`)
+      return NextResponse.json({ success: true, txHash })
+    } else {
+      return NextResponse.json(
+        { error: 'No matching payment found to update' },
+        { status: 404 }
+      )
+    }
+  } catch (error) {
+    console.error('Failed to update txHash:', error)
+    return NextResponse.json(
+      { error: 'Failed to update transaction hash' },
+      { status: 500 }
+    )
+  }
 }

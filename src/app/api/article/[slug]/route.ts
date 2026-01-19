@@ -15,27 +15,20 @@ type RouteContext = { params: Promise<{ slug: string }> }
 
 function createHandler(article: Article) {
   return async (req: NextRequest): Promise<NextResponse> => {
-    // Extract payer from payment signature
+    // Extract payer from payment header
+    const paymentHeader = req.headers.get('payment-signature')
     let payer = 'unknown'
-    let txHash: string | null = null
-
-    try {
-      const sig = req.headers.get('payment-signature')
-      if (sig) {
-        const parsed = JSON.parse(Buffer.from(sig, 'base64').toString())
-        payer = parsed.payload?.authorization?.from || 'unknown'
-      }
-      const res = req.headers.get('x-payment-response')
-      if (res) {
-        const parsed = JSON.parse(Buffer.from(res, 'base64').toString())
-        txHash = parsed.transaction || null
-      }
-    } catch { /* ignore parsing errors */ }
+    if (paymentHeader) {
+      try {
+        const decoded = JSON.parse(Buffer.from(paymentHeader, 'base64').toString())
+        payer = decoded?.payload?.authorization?.from || 'unknown'
+      } catch { /* ignore */ }
+    }
 
     recordPayment({
       slug: article.slug,
       amount: article.priceUsd,
-      txHash,
+      txHash: null,
       payer,
       timestamp: Date.now(),
     }, article.title)

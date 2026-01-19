@@ -16,68 +16,135 @@ import { toFacilitatorEvmSigner } from "@x402/evm";
 import { registerExactEvmScheme } from "@x402/evm/exact/facilitator";
 import dotenv from "dotenv";
 import express from "express";
-import { createWalletClient, http, publicActions } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http, Abi } from "viem";
 import { arcTestnet } from "../lib/arc";
+import {
+  getWallet,
+  executeContractCall,
+  sendRawTransaction,
+} from "../lib/circle-wallet";
 
 dotenv.config({ path: ".env.local" });
 
 const PORT = process.env.PORT || "4022";
 const ARC_NETWORK = "eip155:5042002";
 
-if (!process.env.FACILITATOR_WALLET_KEY) {
-  console.error("❌ FACILITATOR_WALLET_KEY environment variable is required");
+if (!process.env.CIRCLE_FACILITATOR_WALLET_ID) {
+  console.error("❌ CIRCLE_FACILITATOR_WALLET_ID environment variable is required");
+  console.error("   Create a wallet using the MCP tool and set its ID here");
   process.exit(1);
 }
 
-// Initialize account from private key
-const account = privateKeyToAccount(process.env.FACILITATOR_WALLET_KEY as `0x${string}`);
-console.log(`🔑 Facilitator wallet: ${account.address}`);
+const facilitatorWalletId = process.env.CIRCLE_FACILITATOR_WALLET_ID;
 
-// Create viem client
-const viemClient = createWalletClient({
-  account,
+// Get facilitator wallet address from Circle
+async function getFacilitatorAddress(): Promise<`0x${string}`> {
+  const wallet = await getWallet(facilitatorWalletId);
+  if (!wallet?.address) {
+    throw new Error("Failed to get facilitator wallet address");
+  }
+  return wallet.address as `0x${string}`;
+}
+
+// Create viem public client (read-only, no wallet needed)
+const publicClient = createPublicClient({
   chain: arcTestnet,
   transport: http(),
-}).extend(publicActions);
-
-// Create EVM signer
-const evmSigner = toFacilitatorEvmSigner({
-  getCode: (args: { address: `0x${string}` }) => viemClient.getCode(args),
-  address: account.address,
-  readContract: (args: {
-    address: `0x${string}`;
-    abi: readonly unknown[];
-    functionName: string;
-    args?: readonly unknown[];
-  }) =>
-    viemClient.readContract({
-      ...args,
-      args: args.args || [],
-    }),
-  verifyTypedData: (args: {
-    address: `0x${string}`;
-    domain: Record<string, unknown>;
-    types: Record<string, unknown>;
-    primaryType: string;
-    message: Record<string, unknown>;
-    signature: `0x${string}`;
-  }) => viemClient.verifyTypedData(args as any),
-  writeContract: (args: {
-    address: `0x${string}`;
-    abi: readonly unknown[];
-    functionName: string;
-    args: readonly unknown[];
-  }) =>
-    viemClient.writeContract({
-      ...args,
-      args: args.args || [],
-    }),
-  sendTransaction: (args: { to: `0x${string}`; data: `0x${string}` }) =>
-    viemClient.sendTransaction(args),
-  waitForTransactionReceipt: (args: { hash: `0x${string}` }) =>
-    viemClient.waitForTransactionReceipt(args),
 });
+
+// Format ABI function signature for Circle SDK
+function formatAbiFunctionSignature(
+  functionName: string,
+  abi: readonly unknown[]
+): string {
+  const abiTyped = abi as Abi;
+  const func = abiTyped.find(
+    (item): item is Extract<typeof item, { type: "function" }> =>
+      item.type === "function" && item.name === functionName
+  );
+
+  if (!func) {
+    throw new Error(`Function ${functionName} not found in ABI`);
+  }
+
+  const params = func.inputs.map((input) => input.type).join(",");
+  return `${functionName}(${params})`;
+}
+
+// Create Circle-based EVM signer
+async function createCircleEvmSigner() {
+  const facilitatorAddress = await getFacilitatorAddress();
+  console.log(`🔐 Facilitator wallet (Circle): ${facilitatorAddress}`);
+
+  return toFacilitatorEvmSigner({
+    address: facilitatorAddress,
+
+    // Read-only operations use viem public client
+    getCode: (args: { address: `0x${string}` }) => publicClient.getCode(args),
+
+    readContract: (args: {
+      address: `0x${string}`;
+      abi: readonly unknown[];
+      functionName: string;
+      args?: readonly unknown[];
+    }) =>
+      publicClient.readContract({
+        ...args,
+        args: args.args || [],
+      } as any),
+
+    verifyTypedData: (args: {
+      address: `0x${string}`;
+      domain: Record<string, unknown>;
+      types: Record<string, unknown>;
+      primaryType: string;
+      message: Record<string, unknown>;
+      signature: `0x${string}`;
+    }) => publicClient.verifyTypedData(args as any),
+
+    // Write operations use Circle SDK
+    writeContract: async (args: {
+      address: `0x${string}`;
+      abi: readonly unknown[];
+      functionName: string;
+      args: readonly unknown[];
+    }): Promise<`0x${string}`> => {
+      const abiFunctionSignature = formatAbiFunctionSignature(args.functionName, args.abi);
+
+      // Convert args to Circle-compatible format (strings)
+      const abiParameters = args.args.map((arg) =>
+        typeof arg === "bigint" ? arg.toString() : arg
+      ) as (string | number | boolean)[];
+
+      const result = await executeContractCall(
+        facilitatorWalletId,
+        args.address,
+        abiFunctionSignature,
+        abiParameters
+      );
+
+      return result.txHash as `0x${string}`;
+    },
+
+    sendTransaction: async (args: {
+      to: `0x${string}`;
+      data: `0x${string}`;
+    }): Promise<`0x${string}`> => {
+      const result = await sendRawTransaction(
+        facilitatorWalletId,
+        args.to,
+        args.data
+      );
+
+      return result.txHash as `0x${string}`;
+    },
+
+    waitForTransactionReceipt: async (args: { hash: `0x${string}` }) => {
+      // Transaction is already confirmed by Circle polling, just fetch receipt
+      return publicClient.waitForTransactionReceipt(args);
+    },
+  });
+}
 
 // Initialize facilitator with hooks
 const facilitator = new x402Facilitator()
@@ -100,14 +167,6 @@ const facilitator = new x402Facilitator()
     console.log("❌ Settle failed", context);
   });
 
-// Register Arc network
-registerExactEvmScheme(facilitator, {
-  signer: evmSigner,
-  networks: ARC_NETWORK,
-  deployERC4337WithEIP6492: false,
-});
-
-console.log(`📡 Registered network: ${ARC_NETWORK}`);
 
 // Express app
 const app = express();
@@ -187,14 +246,42 @@ app.get("/supported", async (req, res) => {
 });
 
 // Health check
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", network: ARC_NETWORK, wallet: account.address });
+app.get("/health", async (_req, res) => {
+  try {
+    const address = await getFacilitatorAddress();
+    res.json({ status: "ok", network: ARC_NETWORK, wallet: address, type: "circle" });
+  } catch (error) {
+    res.status(500).json({ status: "error", error: String(error) });
+  }
 });
 
 // Start server
-app.listen(parseInt(PORT), () => {
-  console.log(`\n🚀 Arc x402 Facilitator running on http://localhost:${PORT}`);
-  console.log(`   Network: ${ARC_NETWORK} (Arc Testnet)`);
-  console.log(`   Wallet: ${account.address}`);
-  console.log(`   Endpoints: POST /verify, POST /settle, GET /supported, GET /health\n`);
-});
+async function main() {
+  try {
+    // Create Circle-based signer
+    const evmSigner = await createCircleEvmSigner();
+
+    // Register Arc network with Circle signer
+    registerExactEvmScheme(facilitator, {
+      signer: evmSigner,
+      networks: ARC_NETWORK,
+      deployERC4337WithEIP6492: false,
+    });
+
+    console.log(`📡 Registered network: ${ARC_NETWORK}`);
+
+    const address = await getFacilitatorAddress();
+
+    app.listen(parseInt(PORT), () => {
+      console.log(`\n🚀 Arc x402 Facilitator (Circle SDK) running on http://localhost:${PORT}`);
+      console.log(`   Network: ${ARC_NETWORK} (Arc Testnet)`);
+      console.log(`   Wallet: ${address} (Circle-managed)`);
+      console.log(`   Endpoints: POST /verify, POST /settle, GET /supported, GET /health\n`);
+    });
+  } catch (error) {
+    console.error("Failed to start facilitator:", error);
+    process.exit(1);
+  }
+}
+
+main();

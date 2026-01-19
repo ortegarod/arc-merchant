@@ -11,7 +11,7 @@
  *   const result = await runAgent("Create a wallet and check its balance");
  */
 
-import { generateText, tool } from 'ai';
+import { generateText, tool, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { toHex } from 'viem';
@@ -32,7 +32,7 @@ const arcTools = {
   arc_create_wallet: tool({
     description:
       'Create or get existing Circle Developer-Controlled Wallet for an AI agent on Arc blockchain. Returns wallet ID and address.',
-    parameters: z.object({
+    inputSchema: z.object({
       agent_id: z.string().describe('Unique identifier for the AI agent (e.g., "research-bot-1")'),
     }),
     execute: async ({ agent_id }) => {
@@ -49,7 +49,7 @@ const arcTools = {
 
   arc_get_balance: tool({
     description: 'Get USDC and EURC token balances for a Circle wallet on Arc blockchain.',
-    parameters: z.object({
+    inputSchema: z.object({
       wallet_id: z.string().describe('Circle wallet ID (returned from arc_create_wallet)'),
     }),
     execute: async ({ wallet_id }) => {
@@ -68,7 +68,7 @@ const arcTools = {
 
   arc_list_wallets: tool({
     description: 'List all Circle wallets. Shows wallet IDs, addresses, and blockchains.',
-    parameters: z.object({}),
+    inputSchema: z.object({}),
     execute: async () => {
       const wallets = await listWallets();
       return {
@@ -87,7 +87,7 @@ const arcTools = {
 
   arc_get_wallet: tool({
     description: 'Get details for a specific Circle wallet by ID.',
-    parameters: z.object({
+    inputSchema: z.object({
       wallet_id: z.string().describe('Circle wallet ID'),
     }),
     execute: async ({ wallet_id }) => {
@@ -111,7 +111,7 @@ const arcTools = {
   arc_request_testnet_tokens: tool({
     description:
       'Request testnet tokens (USDC, EURC, native) from Circle faucet. Funds your wallet directly.',
-    parameters: z.object({
+    inputSchema: z.object({
       address: z.string().describe('Wallet address to fund (0x...)'),
       usdc: z.boolean().default(true).describe('Request USDC tokens'),
       eurc: z.boolean().default(false).describe('Request EURC tokens'),
@@ -135,7 +135,7 @@ const arcTools = {
   arc_transfer: tool({
     description:
       'Transfer USDC to another address on Arc blockchain. This is a direct on-chain transfer.',
-    parameters: z.object({
+    inputSchema: z.object({
       from_address: z.string().describe('Sender wallet address (0x...)'),
       to_address: z.string().describe('Recipient address (0x...)'),
       amount: z.string().describe('Amount to send in USDC (e.g., "1.50")'),
@@ -156,7 +156,7 @@ const arcTools = {
 
   arc_get_transaction: tool({
     description: 'Get transaction details and explorer link for an Arc blockchain transaction.',
-    parameters: z.object({
+    inputSchema: z.object({
       tx_hash: z.string().describe('Transaction hash (0x...)'),
     }),
     execute: async ({ tx_hash }) => {
@@ -172,7 +172,7 @@ const arcTools = {
   arc_pay_for_content: tool({
     description:
       'Autonomously pay for paywalled content using x402 protocol. Handles the full payment flow: request content, receive 402 Payment Required, sign payment via Circle SDK, retry with payment signature, return content.',
-    parameters: z.object({
+    inputSchema: z.object({
       wallet_id: z.string().describe('Circle wallet ID to pay from'),
       url: z.string().describe('URL of the paywalled resource'),
       max_price: z.string().default('1.00').describe('Maximum price willing to pay in USDC (e.g., "0.01")'),
@@ -338,7 +338,7 @@ export async function runAgent(prompt: string, config: AgentConfig = {}) {
   const result = await generateText({
     model: google(model),
     tools: arcTools,
-    maxSteps,
+    stopWhen: stepCountIs(maxSteps),
     system: systemPrompt,
     prompt,
   });
@@ -369,7 +369,7 @@ export async function streamAgent(prompt: string, config: AgentConfig = {}) {
   return streamText({
     model: google(model),
     tools: arcTools,
-    maxSteps,
+    stopWhen: stepCountIs(maxSteps),
     system: systemPrompt,
     prompt,
   });

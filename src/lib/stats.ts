@@ -160,3 +160,20 @@ export function getCachedWallet(): { id: string; address: string } | null {
   }
   return null;
 }
+
+/**
+ * Update a payment's transaction hash
+ * Called after settlement when the txHash becomes available
+ */
+export function updatePaymentTxHash(slug: string, payer: string, txHash: string): boolean {
+  // Find the most recent payment matching slug and payer without a txHash
+  const payment = store.payments.find(
+    p => p.slug === slug && p.payer.toLowerCase() === payer.toLowerCase() && !p.txHash
+  );
+
+  if (payment) {
+    payment.txHash = txHash;
+    return true;
+  }
+  return false;
+}

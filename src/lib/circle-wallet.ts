@@ -267,3 +267,119 @@ export async function getMerchantWallet(): Promise<{ id: string; address: `0x${s
     address: merchant.address as `0x${string}`,
   };
 }
+
+/**
+ * Poll for Circle transaction completion
+ */
+export async function waitForCircleTransaction(
+  transactionId: string,
+  maxAttempts = 60,
+  intervalMs = 1000
+): Promise<{ txHash: string; state: string }> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const response = await circleClient.getTransaction({ id: transactionId });
+    const tx = response.data?.transaction;
+
+    if (!tx) {
+      throw new Error(`Transaction ${transactionId} not found`);
+    }
+
+    console.log(`   Polling tx ${transactionId}: ${tx.state} (attempt ${i + 1}/${maxAttempts})`);
+
+    switch (tx.state) {
+      case 'COMPLETE':
+        if (!tx.txHash) {
+          throw new Error('Transaction complete but no txHash');
+        }
+        return { txHash: tx.txHash, state: tx.state };
+
+      case 'FAILED':
+        throw new Error(`Transaction failed: ${tx.errorReason || 'Unknown error'}`);
+
+      case 'CANCELLED':
+        throw new Error('Transaction was cancelled');
+
+      case 'DENIED':
+        throw new Error('Transaction was denied');
+
+      default:
+        // Still processing (INITIATED, QUEUED, SENT, CONFIRMED) - keep polling
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
+
+  throw new Error(`Transaction ${transactionId} timed out after ${maxAttempts} attempts`);
+}
+
+/**
+ * Execute a smart contract function via Circle wallet
+ * Used by the facilitator to submit settlement transactions
+ */
+export async function executeContractCall(
+  walletId: string,
+  contractAddress: string,
+  abiFunctionSignature: string,
+  abiParameters: (string | number | boolean)[]
+): Promise<{ txHash: string; transactionId: string }> {
+  console.log(`   📝 Circle executeContract: ${abiFunctionSignature} on ${contractAddress}`);
+
+  const response = await circleClient.createContractExecutionTransaction({
+    walletId,
+    contractAddress,
+    abiFunctionSignature,
+    abiParameters,
+    fee: {
+      type: 'level',
+      config: {
+        feeLevel: 'MEDIUM',
+      },
+    },
+  });
+
+  if (!response.data?.id) {
+    throw new Error('Failed to create contract execution transaction');
+  }
+
+  const transactionId = response.data.id;
+  console.log(`   ⏳ Transaction submitted: ${transactionId}`);
+
+  const result = await waitForCircleTransaction(transactionId);
+  console.log(`   ✅ Transaction confirmed: ${result.txHash}`);
+
+  return { txHash: result.txHash, transactionId };
+}
+
+/**
+ * Send raw transaction data via Circle wallet
+ */
+export async function sendRawTransaction(
+  walletId: string,
+  toAddress: string,
+  callData: `0x${string}`
+): Promise<{ txHash: string; transactionId: string }> {
+  console.log(`   📝 Circle sendTransaction to ${toAddress}`);
+
+  const response = await circleClient.createContractExecutionTransaction({
+    walletId,
+    contractAddress: toAddress,
+    callData,
+    fee: {
+      type: 'level',
+      config: {
+        feeLevel: 'MEDIUM',
+      },
+    },
+  });
+
+  if (!response.data?.id) {
+    throw new Error('Failed to create transaction');
+  }
+
+  const transactionId = response.data.id;
+  console.log(`   ⏳ Transaction submitted: ${transactionId}`);
+
+  const result = await waitForCircleTransaction(transactionId);
+  console.log(`   ✅ Transaction confirmed: ${result.txHash}`);
+
+  return { txHash: result.txHash, transactionId };
+}

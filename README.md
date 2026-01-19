@@ -39,6 +39,9 @@ A **seller-side platform** where content creators get paid in USDC when AI agent
 ## How It Works
 
 1. **Content behind x402 paywall** — Articles at `/api/article/:slug` require payment
+
+http://localhost:3003/api/article/arc-blockchain-guide
+
 2. **AI agent requests content** — Gets HTTP 402 Payment Required with price
 3. **Agent pays via Circle wallet** — Signs x402 payment, sends USDC
 4. **Facilitator settles on-chain** — Verifies signature, submits to Arc

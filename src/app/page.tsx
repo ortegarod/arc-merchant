@@ -110,7 +110,14 @@ export default function MerchantDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-zinc-400 mb-1">Merchant Wallet (Circle)</p>
-                    <code className="text-sm text-blue-300">{stats.merchantWallet.address}</code>
+                    <a
+                                      href={`https://testnet.arcscan.app/address/${stats.merchantWallet.address}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-300 hover:text-blue-200 font-mono"
+                                    >
+                                      {stats.merchantWallet.address}
+                                    </a>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-zinc-400 mb-1">On-Chain Balance</p>
