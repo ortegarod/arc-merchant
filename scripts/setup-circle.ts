@@ -49,7 +49,7 @@ async function setupCircle() {
     });
 
     console.log('✅ Entity Secret registered successfully!\n');
-    console.log('📄 Recovery file saved to: arc-money-manager/\n');
+    console.log('📄 Recovery file saved to: arc-merchant/\n');
 
     // Step 3: Save to .env.local
     console.log('3️⃣ Updating .env.local...\n');
@@ -76,7 +76,7 @@ async function setupCircle() {
 
     console.log('⚠️  IMPORTANT: Backup your Entity Secret and recovery file!');
     console.log('   - Entity Secret is in .env.local');
-    console.log('   - Recovery file is in arc-money-manager/');
+    console.log('   - Recovery file is in arc-merchant/');
     console.log('   - Store both in a secure location\n');
 
     console.log('📝 Next steps:');

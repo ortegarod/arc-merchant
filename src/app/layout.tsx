@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Arc Money Manager - x402 Micropayments",
-  description: "Content paywall using x402 protocol on Arc blockchain. Demonstrates how creators get paid when AI agents access their content.",
+  title: "Arc Merchant - x402 Payments for AI Agents",
+  description: "Merchant infrastructure for AI agent payments. Content creators get paid in USDC when autonomous agents access paywalled content via x402 on Arc.",
 };
 
 export default function RootLayout({
