@@ -8,7 +8,7 @@
  *   npx tsx scripts/run-agent.ts "Pay for content at http://localhost:3000/api/article/premium-guide"
  */
 
-import { runAgent } from '../src/agents/arc-payment-agent.js';
+import { runAgent } from '../src/agents/vercel-agent.js';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
@@ -40,13 +40,13 @@ async function main() {
       console.log('\n🔧 Tool Results:\n');
       for (const toolResult of result.toolResults) {
         console.log(`  ${toolResult.toolName}:`);
-        console.log(`  ${JSON.stringify(toolResult.result, null, 2).split('\n').join('\n  ')}`);
+        console.log(`  ${JSON.stringify(toolResult.output, null, 2).split('\n').join('\n  ')}`);
       }
     }
 
     console.log('\n📊 Usage:');
-    console.log(`  Input tokens:  ${result.usage?.promptTokens}`);
-    console.log(`  Output tokens: ${result.usage?.completionTokens}`);
+    console.log(`  Input tokens:  ${result.usage?.inputTokens ?? 'N/A'}`);
+    console.log(`  Output tokens: ${result.usage?.outputTokens ?? 'N/A'}`);
     console.log(`  Total steps:   ${result.steps?.length}`);
   } catch (error: any) {
     console.error('\n❌ Error:', error.message);

@@ -14,25 +14,7 @@ export const dynamic = 'force-dynamic'
 type RouteContext = { params: Promise<{ slug: string }> }
 
 function createHandler(article: Article) {
-  return async (req: NextRequest): Promise<NextResponse> => {
-    // Extract payer from payment header
-    const paymentHeader = req.headers.get('payment-signature')
-    let payer = 'unknown'
-    if (paymentHeader) {
-      try {
-        const decoded = JSON.parse(Buffer.from(paymentHeader, 'base64').toString())
-        payer = decoded?.payload?.authorization?.from || 'unknown'
-      } catch { /* ignore */ }
-    }
-
-    recordPayment({
-      slug: article.slug,
-      amount: article.priceUsd,
-      txHash: null,
-      payer,
-      timestamp: Date.now(),
-    }, article.title)
-
+  return async (): Promise<NextResponse> => {
     return NextResponse.json(article)
   }
 }
@@ -43,6 +25,16 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
   if (!article) {
     return NextResponse.json({ error: 'Article not found' }, { status: 404 })
+  }
+
+  // Extract payer from payment header (before x402 processes it)
+  const paymentHeader = req.headers.get('payment-signature')
+  let payer = 'unknown'
+  if (paymentHeader) {
+    try {
+      const decoded = JSON.parse(Buffer.from(paymentHeader, 'base64').toString())
+      payer = decoded?.payload?.authorization?.from || 'unknown'
+    } catch { /* ignore */ }
   }
 
   const handler = withX402(
@@ -65,5 +57,28 @@ export async function GET(req: NextRequest, context: RouteContext) {
     server,
   )
 
-  return handler(req)
+  const response = await handler(req)
+
+  // If payment was made, extract txHash and record it
+  if (response.status === 200 && paymentHeader) {
+    const paymentResponseHeader = response.headers.get('payment-response')
+    let txHash: string | null = null
+
+    if (paymentResponseHeader) {
+      try {
+        const paymentResponse = JSON.parse(Buffer.from(paymentResponseHeader, 'base64').toString())
+        txHash = paymentResponse.transaction || null
+      } catch { /* ignore */ }
+    }
+
+    recordPayment({
+      slug: article.slug,
+      amount: article.priceUsd,
+      txHash,
+      payer,
+      timestamp: Date.now(),
+    }, article.title)
+  }
+
+  return response
 }

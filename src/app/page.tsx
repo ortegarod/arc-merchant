@@ -246,19 +246,6 @@ export default function MerchantDashboard() {
               )}
             </div>
 
-            {/* How to Test */}
-            <div className="rounded-xl bg-zinc-800/30 border border-zinc-700 p-6">
-              <h2 className="text-lg font-semibold mb-3">How to Test</h2>
-              <p className="text-sm text-zinc-400 mb-4">
-                Use the MCP tools in Claude Code to make payments. The dashboard updates live.
-              </p>
-              <div className="bg-zinc-900 rounded-lg p-4 font-mono text-sm">
-                <p className="text-zinc-500"># In Claude Code, ask:</p>
-                <p className="text-green-400 mt-1">
-                  &quot;Pay for http://localhost:3000/api/article/arc-blockchain-guide&quot;
-                </p>
-              </div>
-            </div>
           </div>
         )}
       </main>

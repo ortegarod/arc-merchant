@@ -9,14 +9,16 @@
     "lint": "eslint",
     "facilitator": "tsx src/servers/facilitator.ts",
     "mcp": "tsx src/servers/mcp.ts",
-    "test-pay": "tsx scripts/test-payment.ts",
-    "test-article": "tsx scripts/test-article.ts",
-    "agent": "tsx scripts/run-agent.ts"
+    "setup-circle": "tsx scripts/setup-circle-entity.ts",
+    "agent:vercel": "tsx scripts/agent-vercel-demo.ts",
+    "agent:google": "tsx scripts/agent-google-demo.ts",
+    "wallet": "tsx scripts/wallet-cli.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
     "@ai-sdk/react": "^3.0.41",
     "@circle-fin/developer-controlled-wallets": "^9.6.0",
+    "@google/genai": "^1.38.0",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@x402/core": "^2.2.0",
     "@x402/evm": "^2.2.0",

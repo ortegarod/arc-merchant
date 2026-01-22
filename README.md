@@ -30,23 +30,50 @@ A **seller-side platform** where content creators get paid in USDC when AI agent
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**The buyer side** (autonomous AI agent) is handled by Claude Code with the `arc-agent-payments` MCP server—it manages wallets and signs x402 payments.
+**The buyer side** (your chosen autonomous AI agent framework) manages wallets and signs x402 payments.
 
-**The seller side** (this project) provides paywalled content endpoints and a real-time dashboard showing payments as they arrive.
+**The seller side** (next.js) provides paywalled content endpoints and a real-time dashboard showing payments as they arrive.
 
 ---
 
 ## How It Works
 
 1. **Content behind x402 paywall** — Articles at `/api/article/:slug` require payment
-
-http://localhost:3003/api/article/arc-blockchain-guide
-
 2. **AI agent requests content** — Gets HTTP 402 Payment Required with price
 3. **Agent pays via Circle wallet** — Signs x402 payment, sends USDC
-4. **Facilitator settles on-chain** — Verifies signature, submits to Arc
+4. **Facilitator server settles on-chain** — Verifies signature, submits to Arc L1
 5. **Content delivered** — Agent receives the article
-6. **Dashboard updates** — Merchant sees payment in real-time
+6. **Dashboard updates** — Merchant sees payment in real-time, can track receipts, sales, autonomous treasury, etc
+
+---
+
+## Architecture: Buyer vs Seller
+
+This project contains **both sides** of the x402 payment flow:
+
+### Buyer Side (AI Agent Tools)
+
+The `src/tools/` SDK lets AI agents manage wallets and pay for content:
+
+```
+src/tools/core.ts        → Tool definitions (Zod + execute functions)
+src/tools/adapters/      → MCP, SDK adapters
+src/servers/mcp.ts       → MCP server for Claude Code
+```
+
+### Seller Side (Facilitator + API)
+
+The facilitator settles payments on-chain when agents pay for your content:
+
+```
+src/servers/facilitator.ts   → Receives signed payments, settles on Arc blockchain
+src/app/api/article/         → x402-protected content endpoints
+src/app/page.tsx             → Merchant dashboard
+```
+
+**Use this if:** You're a merchant accepting x402 payments for content.
+
+**The facilitator is required** — it's what actually moves USDC on-chain. Think of it like your own payment processor. 
 
 ---
 
@@ -58,14 +85,23 @@ http://localhost:3003/api/article/arc-blockchain-guide
 npm install
 ```
 
-### 2. Get Circle API credentials
+### 2. Configure environment variables
 
-1. Go to [Circle Developer Console](https://console.circle.com)
-2. Create an API Key
-3. Add to `.env.local`:
+Copy `.env.local.example` to `.env.local` and fill in:
 
 ```bash
-CIRCLE_API_KEY=your_api_key_here
+# Circle API credentials (https://console.circle.com)
+CIRCLE_API_KEY=
+CIRCLE_ENTITY_SECRET=
+
+# Facilitator wallet (create via arc_create_wallet, then add ID here)
+CIRCLE_FACILITATOR_WALLET_ID=
+
+# Google AI (for Vercel AI SDK with Gemini)
+GOOGLE_GENERATIVE_AI_API_KEY=
+
+# Google AI (for @google/genai SDK)
+GEMINI_API_KEY=
 ```
 
 ### 3. Set up Circle Entity Secret (one-time)
@@ -74,15 +110,20 @@ CIRCLE_API_KEY=your_api_key_here
 npm run setup-circle
 ```
 
-This generates and registers your Entity Secret with Circle.
+This generates and registers your Entity Secret with Circle (updates `CIRCLE_ENTITY_SECRET`).
 
 ### 4. Configure facilitator wallet
 
-Add a test wallet private key for the facilitator (settles payments on-chain):
+Create a Circle wallet to use as your facilitator (settles payments on-chain):
 
 ```bash
-# .env.local
-ARC_WALLET_KEY=0x...  # Test wallet private key
+npm run wallet create
+```
+
+This outputs a wallet ID. Add it to `.env.local`:
+
+```bash
+CIRCLE_FACILITATOR_WALLET_ID=<your-wallet-id>
 ```
 
 ### 5. Run both servers
@@ -91,7 +132,7 @@ ARC_WALLET_KEY=0x...  # Test wallet private key
 # Terminal 1: Facilitator (settles payments)
 npm run facilitator
 
-# Terminal 2: Next.js (dashboard + paywall)
+# Terminal 2: Next.js (dashboard + paywalled API server)
 npm run dev
 ```
 
@@ -113,6 +154,12 @@ Watch the dashboard update in real-time.
 
 ```
 arc-merchant/
+├── src/tools/                    # Framework-agnostic AI tools (SDK core)
+│   ├── core.ts                   # Tool definitions (Zod schemas + execute)
+│   └── adapters/
+│       ├── mcp.ts                # MCP adapter (Claude Code)
+│       ├── vercel.ts             # Vercel AI SDK adapter
+│       └── google-genai.ts       # Google GenAI SDK adapter
 ├── src/app/
 │   ├── page.tsx                  # Merchant dashboard
 │   └── api/
@@ -126,28 +173,92 @@ arc-merchant/
 ├── src/servers/
 │   ├── facilitator.ts            # Payment settlement server
 │   └── mcp.ts                    # MCP server for AI agents
+├── src/agents/
+│   ├── vercel-agent.ts           # AI agent using Vercel AI SDK
+│   └── google-agent.ts           # AI agent using Google GenAI SDK (Gemini 3)
 └── scripts/
-    └── setup-circle.ts           # Circle wallet setup
+    ├── setup-circle-entity.ts    # Circle entity secret setup
+    ├── wallet-cli.ts             # Wallet management CLI
+    ├── agent-vercel-demo.ts      # Demo: Vercel AI SDK agent
+    └── agent-google-demo.ts      # Demo: Google GenAI agent
 ```
 
 ---
 
-## MCP Tools (Buyer Side)
+## AI Payment Tools (SDK)
 
-The `arc-agent-payments` MCP server provides these tools to AI agents:
+Framework-agnostic tools for AI agents to manage Circle wallets and pay for content via x402.
+
+### Tools Available
 
 | Tool | Description |
 |------|-------------|
-| `arc_create_wallet` | Create/get Circle wallet for an agent |
+| `arc_list_wallets` | List all Circle wallets |
+| `arc_get_wallet` | Get details for a specific wallet |
+| `arc_create_wallet` | Create a new Circle wallet |
 | `arc_get_balance` | Check USDC/EURC balances |
 | `arc_pay_for_content` | Pay for x402 paywalled content |
 | `arc_transfer` | Direct USDC transfer |
 | `arc_request_testnet_tokens` | Fund wallet from Circle faucet |
+| `arc_get_transaction` | Get transaction details |
 
-Add to Claude Code:
+### Usage with MCP (Claude Code)
 
 ```bash
 claude mcp add arc-mcp-server -- npm run mcp
+```
+
+### Usage with Other Frameworks
+
+The core tools are framework-agnostic. Import from `src/tools/core.ts` and create your own adapter:
+
+```typescript
+import { arcTools } from './src/tools/core';
+
+// Each tool has: name, description, inputSchema (Zod), execute (async function)
+const result = await arcTools.arc_list_wallets.execute({});
+```
+
+---
+
+## Pre-built AI Agents
+
+Two ready-to-use agents for autonomous payments:
+
+### Google GenAI Agent (Gemini 3)
+
+Uses Google's official `@google/genai` SDK with the latest `gemini-3-flash-preview` model:
+
+```bash
+npm run agent:google "Pay for http://localhost:3000/api/article/arc-blockchain-guide"
+```
+
+```typescript
+import { runGoogleAgent } from './src/agents/google-agent';
+
+const result = await runGoogleAgent("List my wallets and pay for the article");
+console.log(result.text);
+```
+
+### Vercel AI Agent
+
+Uses Vercel AI SDK (works with Gemini, OpenAI, Anthropic, etc.):
+
+```bash
+npm run agent:vercel "Check my wallet balance"
+```
+
+```typescript
+import { runAgent } from './src/agents/vercel-agent';
+import { openai } from '@ai-sdk/openai';
+
+// Default: Gemini 2.5 Flash
+const result = await runAgent("Pay for the article");
+
+// Or use any Vercel AI SDK model
+const result = await runAgent("Pay for the article", {
+  model: openai('gpt-4o')
+});
 ```
 
 ---
@@ -157,7 +268,10 @@ claude mcp add arc-mcp-server -- npm run mcp
 - **Arc** — Circle's L1 blockchain with native USDC gas
 - **Circle Developer-Controlled Wallets** — Secure wallet infrastructure
 - **x402** — Web-native micropayment protocol (HTTP 402)
+- **Zod** — Schema validation (with native JSON Schema conversion for MCP)
 - **Next.js** — Dashboard and API
+- **Vercel AI SDK** — Framework-agnostic AI tools (Gemini, OpenAI, Anthropic, etc.)
+- **MCP** — Model Context Protocol for Claude Code integration
 - **USDC** — Stablecoin payments
 
 ---

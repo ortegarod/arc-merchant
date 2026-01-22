@@ -28,38 +28,15 @@ export const circleClient = initiateDeveloperControlledWalletsClient({
 });
 
 /**
- * Create or get existing wallet for an AI agent
- *
- * Checks if a wallet already exists for this agent before creating a new one.
+ * Create a new wallet on Arc blockchain
  */
-export async function createAgentWallet(agentId: string) {
-  // Check if wallet already exists on ARC-TESTNET
-  const existingWallets = await listWallets();
-
-  // Sort by ID for deterministic selection (same order as getMerchantWallet)
-  const arcWallets = existingWallets
-    .filter((w: any) => w.blockchain === 'ARC-TESTNET' && w.accountType === 'EOA')
-    .sort((a: any, b: any) => a.id.localeCompare(b.id));
-
-  if (arcWallets.length > 0) {
-    const arcWallet = arcWallets[0];
-    console.log(`Using existing wallet for ${agentId}`);
-    console.log(`   Address: ${arcWallet.address}`);
-    console.log(`   Wallet ID: ${arcWallet.id}`);
-    return {
-      id: arcWallet.id,
-      address: arcWallet.address as `0x${string}`,
-      blockchain: arcWallet.blockchain,
-    };
-  }
-
-  // No existing wallet - create new one
+export async function createAgentWallet() {
   // Step 1: Create wallet set
   let walletSetId: string;
 
   try {
     const walletSetResponse = await circleClient.createWalletSet({
-      name: `${agentId}-walletset`,
+      name: `arc-walletset`,
     });
 
     if (!walletSetResponse.data?.walletSet?.id) {
@@ -86,9 +63,7 @@ export async function createAgentWallet(agentId: string) {
 
   const wallet = response.data.wallets[0];
 
-  console.log(`✅ Created wallet for agent ${agentId}`);
-  console.log(`   Address: ${wallet.address}`);
-  console.log(`   Wallet ID: ${wallet.id}`);
+  console.log(`✅ Created wallet: ${wallet.address}`);
 
   return {
     id: wallet.id,
