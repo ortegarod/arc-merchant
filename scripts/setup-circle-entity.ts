@@ -80,6 +80,9 @@ async function setupCircle() {
 
   } catch (error: any) {
     console.error('❌ Registration failed:', error.message);
+    if (error.response?.data) {
+      console.error('Circle error:', JSON.stringify(error.response.data, null, 2));
+    }
     console.error('\nYou can still use the Entity Secret manually:');
     console.log(`   CIRCLE_ENTITY_SECRET=${entitySecret}`);
     process.exit(1);

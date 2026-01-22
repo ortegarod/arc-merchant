@@ -3,6 +3,20 @@
 import { useEffect, useState } from 'react'
 import { getAllArticles } from '@/data/articles'
 
+// Inline SVG icons
+const CopyIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" strokeWidth={2} />
+    <path strokeWidth={2} d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+  </svg>
+)
+
+const CheckIcon = () => (
+  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 6 9 17l-5-5" />
+  </svg>
+)
+
 interface Payment {
   slug: string
   amount: number
@@ -36,7 +50,21 @@ export default function MerchantDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [baseUrl, setBaseUrl] = useState('')
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
   const articles = getAllArticles()
+
+  // Get base URL on mount
+  useEffect(() => {
+    setBaseUrl(window.location.origin)
+  }, [])
+
+  // Copy to clipboard handler
+  const copyToClipboard = async (text: string, slug: string) => {
+    await navigator.clipboard.writeText(text)
+    setCopiedSlug(slug)
+    setTimeout(() => setCopiedSlug(null), 2000)
+  }
 
   // Fetch stats
   const fetchStats = async () => {
@@ -170,7 +198,18 @@ export default function MerchantDashboard() {
                           <p className="font-medium">{article.title}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <code className="text-sm text-zinc-400">/{article.slug}</code>
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm text-zinc-400">
+                              {baseUrl}/api/article/{article.slug}
+                            </code>
+                            <button
+                              onClick={() => copyToClipboard(`${baseUrl}/api/article/${article.slug}`, article.slug)}
+                              className="text-zinc-500 hover:text-blue-400 transition-colors cursor-pointer"
+                              title="Copy URL"
+                            >
+                              {copiedSlug === article.slug ? <CheckIcon /> : <CopyIcon />}
+                            </button>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="text-green-400">${article.priceUsd}</span>

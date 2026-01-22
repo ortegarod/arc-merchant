@@ -185,6 +185,19 @@ arc-merchant/
 
 ---
 
+## Wallet CLI
+
+Manage Circle wallets without AI:
+
+```bash
+npm run wallet create          # Create a new wallet
+npm run wallet list            # List all wallets
+npm run wallet balance <id>    # Get wallet balance
+npm run wallet fund <address>  # Request testnet tokens
+```
+
+---
+
 ## AI Payment Tools (SDK)
 
 Framework-agnostic tools for AI agents to manage Circle wallets and pay for content via x402.
