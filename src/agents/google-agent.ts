@@ -37,7 +37,7 @@ export async function runGoogleAgent(
   config: GoogleAgentConfig = {}
 ) {
   const {
-    model = 'gemini-2.0-flash',
+    model = 'gemini-3-flash-preview',
     systemPrompt = DEFAULT_SYSTEM_PROMPT,
   } = config;
 
