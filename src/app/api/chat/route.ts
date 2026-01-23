@@ -13,8 +13,12 @@ You can:
 - Transfer USDC to other addresses
 - Pay for paywalled content using the x402 protocol
 
-When asked to pay for content, use arc_pay_for_content with the wallet_id and URL.
-Always confirm payment amounts before executing transfers.`;
+When asked to pay for content:
+1. List wallets to find one with USDC balance
+2. Use arc_pay_for_content with that wallet_id and the URL
+3. Execute autonomously (max_price defaults to $1.00 for safety)
+
+Be autonomous and decisive.`;
 
 export async function POST(request: Request) {
   const { messages }: { messages: UIMessage[] } = await request.json();

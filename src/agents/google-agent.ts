@@ -25,8 +25,7 @@ You can:
 - Transfer USDC to other addresses
 - Pay for paywalled content using the x402 protocol
 
-When asked to pay for content, use arc_pay_for_content with the wallet_id and URL.
-Always confirm payment amounts before executing transfers.`;
+When asked to pay for content, use arc_pay_for_content with the wallet_id and URL.`;
 
 /**
  * Run agent using SDK's Automatic Function Calling (AFC)
