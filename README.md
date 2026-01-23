@@ -4,8 +4,6 @@ Merchant infrastructure for autonomous AI agent payments on Arc blockchain.
 
 ## What This Is
 
-A **seller-side platform** where content creators get paid in USDC when AI agents access paywalled content via the x402 protocol.
-
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │              AI Agent (e.g., Claude Code)                   │
@@ -283,7 +281,7 @@ const result = await runAgent("Pay for the article", {
 - **x402** — Web-native micropayment protocol (HTTP 402)
 - **Zod** — Schema validation (with native JSON Schema conversion for MCP)
 - **Next.js** — Dashboard and API
-- **Vercel AI SDK** — Framework-agnostic AI tools (Gemini, OpenAI, Anthropic, etc.)
+- **Vercel AI SDK** — Model-agnostic (Gemini, OpenAI, Anthropic, etc.)
 - **MCP** — Model Context Protocol for Claude Code integration
 - **USDC** — Stablecoin payments
 

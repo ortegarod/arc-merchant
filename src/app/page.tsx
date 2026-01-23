@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { getAllArticles } from '@/data/articles'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 // Inline SVG icons
 const CopyIcon = () => (
@@ -333,7 +335,31 @@ export default function MerchantDashboard() {
                         {msg.parts.map((part, idx) => {
                           switch (part.type) {
                             case 'text':
-                              return <p key={idx} className="whitespace-pre-wrap break-words">{part.text}</p>
+                              return (
+                                <div key={idx}>
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      a: (props) => (
+                                        <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />
+                                      ),
+                                      code: ({ inline, ...props }: any) => (
+                                        inline ?
+                                          <code {...props} className="bg-zinc-800 px-1 py-0.5 rounded text-sm" /> :
+                                          <code {...props} className="block bg-zinc-800 p-2 rounded text-sm overflow-x-auto my-2" />
+                                      ),
+                                      h1: (props) => <h1 {...props} className="text-xl font-bold mt-3 mb-2" />,
+                                      h2: (props) => <h2 {...props} className="text-lg font-bold mt-3 mb-2" />,
+                                      h3: (props) => <h3 {...props} className="text-base font-bold mt-2 mb-1" />,
+                                      ul: (props) => <ul {...props} className="list-disc ml-4 my-2" />,
+                                      ol: (props) => <ol {...props} className="list-decimal ml-4 my-2" />,
+                                      p: (props) => <p {...props} className="my-2" />,
+                                    }}
+                                  >
+                                    {part.text}
+                                  </ReactMarkdown>
+                                </div>
+                              )
                             case 'step-start':
                               return null
                             case 'dynamic-tool':
