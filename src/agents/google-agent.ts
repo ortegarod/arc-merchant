@@ -1,23 +1,18 @@
 /**
  * Google GenAI Agent
  *
- * Uses Google's official @google/genai SDK directly.
- * Supports latest models like gemini-3-flash-preview.
- *
- * Usage:
- *   import { runGoogleAgent } from './google-genai-agent';
- *   const result = await runGoogleAgent("Pay for the article");
+ * Uses Google's official @google/genai SDK with Automatic Function Calling (AFC).
+ * The SDK handles the tool loop automatically - no manual looping needed.
  */
 
-import { GoogleGenAI } from '@google/genai';
-import { googleGenaiTools, executeTool } from '../tools/adapters/google-genai.js';
+import { GoogleGenAI, FunctionCallingConfigMode } from '@google/genai';
+import { arcCallableTool } from '../tools/adapters/google-genai';
 
 // Initialize client (uses GEMINI_API_KEY env var)
 const ai = new GoogleGenAI({});
 
 export interface GoogleAgentConfig {
   model?: string;
-  maxTurns?: number;
   systemPrompt?: string;
 }
 
@@ -34,88 +29,59 @@ When asked to pay for content, use arc_pay_for_content with the wallet_id and UR
 Always confirm payment amounts before executing transfers.`;
 
 /**
- * Run an agent using Google's official GenAI SDK
- * Supports gemini-3-flash-preview and other latest models
+ * Run agent using SDK's Automatic Function Calling (AFC)
+ *
+ * The SDK handles the tool loop automatically when using AUTO mode.
  */
 export async function runGoogleAgent(
   prompt: string,
   config: GoogleAgentConfig = {}
 ) {
   const {
-    model = 'gemini-3-flash-preview',
-    maxTurns = 10,
+    model = 'gemini-2.0-flash',
     systemPrompt = DEFAULT_SYSTEM_PROMPT,
   } = config;
 
-  // Build contents array for multi-turn conversation
-  const contents: Array<{ role: string; parts: Array<Record<string, unknown>> }> = [
-    { role: 'user', parts: [{ text: prompt }] },
-  ];
-
-  let finalText = '';
+  // Track tool calls for reporting
   const toolResults: Array<{ name: string; result: unknown }> = [];
 
-  // Agent loop
-  for (let turn = 0; turn < maxTurns; turn++) {
-    const response = await ai.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction: systemPrompt,
-        tools: [{ functionDeclarations: googleGenaiTools }],
-      },
-    });
-
-    // Check for function calls
-    if (response.functionCalls && response.functionCalls.length > 0) {
-      const functionCall = response.functionCalls[0];
-      const name = functionCall.name;
-      const args = functionCall.args;
-
-      if (!name) {
-        throw new Error('Function call missing name');
+  // Wrap the callable tool to track calls
+  const trackedTool = {
+    ...arcCallableTool,
+    callTool: async (calls: any) => {
+      const results = await arcCallableTool.callTool(calls);
+      // Track each call
+      for (let i = 0; i < calls.length; i++) {
+        const call = calls[i];
+        const result = results[i];
+        console.log(`🔧 Calling: ${call.name}`);
+        toolResults.push({
+          name: call.name,
+          result: result.functionResponse?.response,
+        });
       }
+      return results;
+    },
+  };
 
-      console.log(`🔧 Calling: ${name}`);
-
-      // Execute via adapter
-      const toolResponse = await executeTool(name, args || {});
-      toolResults.push({ name, result: toolResponse });
-
-      // Build function response part
-      const functionResponsePart = {
-        name: functionCall.name,
-        response: { result: toolResponse },
-      };
-
-      // Get the raw model parts to preserve thoughtSignature (required for Gemini 3)
-      const modelParts = response.candidates?.[0]?.content?.parts || [{ functionCall }];
-
-      // Append model's function call to history (with thoughtSignature preserved)
-      contents.push({
-        role: 'model',
-        parts: modelParts as Array<Record<string, unknown>>,
-      });
-
-      // Append function response to history
-      contents.push({
-        role: 'user',
-        parts: [{ functionResponse: functionResponsePart }],
-      });
-    } else {
-      // No more function calls - we have the final response
-      finalText = response.text || '';
-      break;
-    }
-  }
+  // Use generateContent with AUTO mode - SDK handles the loop
+  const response = await ai.models.generateContent({
+    model,
+    contents: prompt,
+    config: {
+      systemInstruction: systemPrompt,
+      tools: [trackedTool],
+      toolConfig: {
+        functionCallingConfig: {
+          mode: FunctionCallingConfigMode.AUTO,
+        },
+      },
+    },
+  });
 
   return {
-    text: finalText,
+    text: response.text || '',
     toolResults,
     model,
   };
 }
-
-// Re-export tools for convenience
-export { googleGenaiTools, executeTool } from '../tools/adapters/google-genai.js';
-export { arcTools } from '../tools/core.js';

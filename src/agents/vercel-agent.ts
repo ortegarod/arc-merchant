@@ -15,9 +15,9 @@
  *   const result = await runAgent("...", { model: openai('gpt-4o') });
  */
 
-import { generateText, streamText, stepCountIs, type LanguageModel } from 'ai';
+import { generateText, streamText, stepCountIs, ToolLoopAgent, InferAgentUIMessage, type LanguageModel } from 'ai';
 import { google } from '@ai-sdk/google';
-import { vercelTools } from '../tools/adapters/vercel.js';
+import { vercelTools } from '../tools/adapters/vercel';
 
 // Agent configuration
 export interface AgentConfig {
@@ -94,4 +94,17 @@ export async function streamAgent(prompt: string, config: AgentConfig = {}) {
 export { vercelTools };
 
 // Re-export core tools for direct access
-export { arcTools } from '../tools/core.js';
+export { arcTools } from '../tools/core';
+
+/**
+ * Arc Payment Agent (ToolLoopAgent)
+ *
+ * For use with createAgentUIStreamResponse and useChat
+ */
+export const arcAgent = new ToolLoopAgent({
+  model: google('gemini-2.0-flash'),
+  instructions: DEFAULT_SYSTEM_PROMPT,
+  tools: vercelTools,
+});
+
+export type ArcAgentUIMessage = InferAgentUIMessage<typeof arcAgent>;

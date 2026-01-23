@@ -2,55 +2,76 @@
 /**
  * Google GenAI Agent CLI
  *
- * Uses Google's official @google/genai SDK with gemini-3-flash-preview
+ * Interactive chat with the Arc Payment Agent using Google GenAI SDK.
+ * Supports multi-turn conversation with tool calling.
  *
  * Usage:
- *   npx tsx scripts/run-google-agent.ts "Create a wallet for my-agent"
- *   npx tsx scripts/run-google-agent.ts "List all wallets and show their balances"
+ *   npm run agent:google
+ *   npm run agent:google "Check balance"
+ *   pnpm tsx scripts/agent-google-demo.ts
  */
 
 import { runGoogleAgent } from '../src/agents/google-agent.js';
 import dotenv from 'dotenv';
+import * as readline from 'node:readline/promises';
 
 dotenv.config({ path: '.env.local' });
 
+const terminal = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+// Track conversation history for context
+const conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
 async function main() {
-  const prompt = process.argv.slice(2).join(' ');
+  console.log('🤖 Arc Payment Agent (Google GenAI SDK)\n');
+  console.log('Type your message and press Enter. Type "exit" to quit.\n');
+  console.log('─'.repeat(50) + '\n');
 
-  if (!prompt) {
-    console.log('Usage: npx tsx scripts/run-google-agent.ts "<your prompt>"');
-    console.log('\nExamples:');
-    console.log('  npx tsx scripts/run-google-agent.ts "Create a wallet for test-agent"');
-    console.log('  npx tsx scripts/run-google-agent.ts "List all my wallets"');
-    process.exit(1);
-  }
+  // Check for initial prompt from command line args
+  const initialPrompt = process.argv.slice(2).join(' ');
 
-  console.log('🤖 Google GenAI Agent (gemini-3-flash-preview)\n');
-  console.log(`Prompt: ${prompt}\n`);
-  console.log('─'.repeat(50));
+  while (true) {
+    let userInput: string;
 
-  try {
-    const result = await runGoogleAgent(prompt);
-
-    console.log('\n📝 Response:\n');
-    console.log(result.text);
-
-    if (result.toolResults && result.toolResults.length > 0) {
-      console.log('\n🔧 Tool Results:\n');
-      for (const toolResult of result.toolResults) {
-        console.log(`  ${toolResult.name}:`);
-        console.log(`  ${JSON.stringify(toolResult.result, null, 2).split('\n').join('\n  ')}`);
-      }
+    if (initialPrompt && conversationHistory.length === 0) {
+      // Use command line arg as first message
+      userInput = initialPrompt;
+      console.log(`You: ${userInput}`);
+    } else {
+      userInput = await terminal.question('You: ');
     }
 
-    console.log('\n📊 Model:', result.model);
-  } catch (error: any) {
-    console.error('\n❌ Error:', error.message);
-    if (error.cause) {
-      console.error('Cause:', error.cause);
+    if (userInput.toLowerCase() === 'exit') {
+      console.log('\nGoodbye!');
+      terminal.close();
+      break;
     }
-    process.exit(1);
+
+    if (!userInput.trim()) continue;
+
+    conversationHistory.push({ role: 'user', content: userInput });
+
+    try {
+      // Build context from conversation history
+      const contextPrompt = conversationHistory
+        .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+        .join('\n\n');
+
+      const result = await runGoogleAgent(contextPrompt);
+
+      console.log('\nAgent:', result.text);
+      console.log('');
+
+      conversationHistory.push({ role: 'assistant', content: result.text });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Agent failed';
+      console.error('\n❌ Error:', message);
+      console.log('');
+    }
   }
 }
 
-main();
+main().catch(console.error);

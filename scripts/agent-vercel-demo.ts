@@ -2,59 +2,96 @@
 /**
  * Arc Payment Agent CLI
  *
+ * Interactive chat with the Arc Payment Agent using Vercel AI SDK.
+ * Supports multi-turn conversation with tool calling.
+ *
  * Usage:
- *   npx tsx scripts/run-agent.ts "Create a wallet for my-agent"
- *   npx tsx scripts/run-agent.ts "List all wallets and show their balances"
- *   npx tsx scripts/run-agent.ts "Pay for content at http://localhost:3000/api/article/premium-guide"
+ *   npm run agent:vercel
+ *   pnpm tsx scripts/agent-vercel-demo.ts
  */
 
-import { runAgent } from '../src/agents/vercel-agent.js';
+import { streamText, stepCountIs, type ModelMessage } from 'ai';
+import { google } from '@ai-sdk/google';
+import { vercelTools } from '../src/tools/adapters/vercel.js';
 import dotenv from 'dotenv';
+import * as readline from 'node:readline/promises';
 
 dotenv.config({ path: '.env.local' });
 
+const terminal = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const messages: ModelMessage[] = [];
+
+const systemPrompt = `You are an AI agent with autonomous payment capabilities on the Arc blockchain.
+
+You can:
+- Create and manage Circle Developer-Controlled Wallets
+- Check wallet balances (USDC, EURC)
+- Request testnet tokens from the faucet
+- Transfer USDC to other addresses
+- Pay for paywalled content using the x402 protocol
+
+When asked to pay for content, use arc_pay_for_content with the wallet_id and URL.
+Always confirm payment amounts before executing transfers.`;
+
 async function main() {
-  const prompt = process.argv.slice(2).join(' ');
+  console.log('🤖 Arc Payment Agent (Vercel AI SDK)\n');
+  console.log('Type your message and press Enter. Type "exit" to quit.\n');
+  console.log('─'.repeat(50) + '\n');
 
-  if (!prompt) {
-    console.log('Usage: npx tsx scripts/run-agent.ts "<your prompt>"');
-    console.log('\nExamples:');
-    console.log('  npx tsx scripts/run-agent.ts "Create a wallet for test-agent"');
-    console.log('  npx tsx scripts/run-agent.ts "List all my wallets"');
-    console.log('  npx tsx scripts/run-agent.ts "Check balance for wallet <id>"');
-    console.log('  npx tsx scripts/run-agent.ts "Request testnet tokens for 0x..."');
-    process.exit(1);
-  }
+  // Check for initial prompt from command line args
+  const initialPrompt = process.argv.slice(2).join(' ');
 
-  console.log('🤖 Arc Payment Agent\n');
-  console.log(`Prompt: ${prompt}\n`);
-  console.log('─'.repeat(50));
+  while (true) {
+    let userInput: string;
 
-  try {
-    const result = await runAgent(prompt);
-
-    console.log('\n📝 Response:\n');
-    console.log(result.text);
-
-    if (result.toolResults && result.toolResults.length > 0) {
-      console.log('\n🔧 Tool Results:\n');
-      for (const toolResult of result.toolResults) {
-        console.log(`  ${toolResult.toolName}:`);
-        console.log(`  ${JSON.stringify(toolResult.output, null, 2).split('\n').join('\n  ')}`);
-      }
+    if (initialPrompt && messages.length === 0) {
+      // Use command line arg as first message
+      userInput = initialPrompt;
+      console.log(`You: ${userInput}`);
+    } else {
+      userInput = await terminal.question('You: ');
     }
 
-    console.log('\n📊 Usage:');
-    console.log(`  Input tokens:  ${result.usage?.inputTokens ?? 'N/A'}`);
-    console.log(`  Output tokens: ${result.usage?.outputTokens ?? 'N/A'}`);
-    console.log(`  Total steps:   ${result.steps?.length}`);
-  } catch (error: any) {
-    console.error('\n❌ Error:', error.message);
-    if (error.cause) {
-      console.error('Cause:', error.cause);
+    if (userInput.toLowerCase() === 'exit') {
+      console.log('\nGoodbye!');
+      terminal.close();
+      break;
     }
-    process.exit(1);
+
+    if (!userInput.trim()) continue;
+
+    messages.push({ role: 'user', content: userInput });
+
+    const result = streamText({
+      model: google('gemini-2.0-flash'),
+      system: systemPrompt,
+      messages,
+      tools: vercelTools,
+      stopWhen: stepCountIs(10),
+      onStepFinish: async ({ toolResults }) => {
+        if (toolResults.length) {
+          for (const tool of toolResults) {
+            console.log(`\n🔧 ${tool.toolName}:`);
+            console.log(JSON.stringify(tool.output, null, 2));
+          }
+        }
+      },
+    });
+
+    let fullResponse = '';
+    process.stdout.write('\nAgent: ');
+    for await (const delta of result.textStream) {
+      fullResponse += delta;
+      process.stdout.write(delta);
+    }
+    process.stdout.write('\n\n');
+
+    messages.push({ role: 'assistant', content: fullResponse });
   }
 }
 
-main();
+main().catch(console.error);

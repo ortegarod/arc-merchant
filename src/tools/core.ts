@@ -16,8 +16,8 @@ import {
   transferUSDC,
   signPaymentAuthorization,
   circleClient,
-} from '../lib/circle-wallet.js';
-import { ARC_CONTRACTS } from '../lib/arc.js';
+} from '../lib/circle-wallet';
+import { ARC_CONTRACTS } from '../lib/arc';
 
 // Tool schemas
 const createWalletSchema = z.object({});

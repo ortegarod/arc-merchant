@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useChat } from '@ai-sdk/react'
 import { getAllArticles } from '@/data/articles'
 
 // Inline SVG icons
@@ -54,6 +55,11 @@ export default function MerchantDashboard() {
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null)
   const articles = getAllArticles()
 
+  // Buyer Agent chat using Vercel AI SDK
+  const { messages, sendMessage, status } = useChat()
+  const [agentInput, setAgentInput] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
   // Get base URL on mount
   useEffect(() => {
     setBaseUrl(window.location.origin)
@@ -98,6 +104,18 @@ export default function MerchantDashboard() {
     return num.toFixed(2)
   }
 
+  // Run buyer agent
+  const runBuyerAgent = () => {
+    if (!agentInput.trim() || status !== 'ready') return
+    sendMessage({ text: agentInput.trim() })
+    setAgentInput('')
+  }
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
@@ -139,13 +157,13 @@ export default function MerchantDashboard() {
                   <div>
                     <p className="text-sm text-zinc-400 mb-1">Merchant Wallet (Circle)</p>
                     <a
-                                      href={`https://testnet.arcscan.app/address/${stats.merchantWallet.address}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-sm text-blue-300 hover:text-blue-200 font-mono"
-                                    >
-                                      {stats.merchantWallet.address}
-                                    </a>
+                      href={`https://testnet.arcscan.app/address/${stats.merchantWallet.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-300 hover:text-blue-200 font-mono"
+                    >
+                      {stats.merchantWallet.address}
+                    </a>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-zinc-400 mb-1">On-Chain Balance</p>
@@ -283,6 +301,97 @@ export default function MerchantDashboard() {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Buyer Agent */}
+            <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+              <h2 className="text-lg font-semibold mb-4">Buyer Agent</h2>
+              <p className="text-sm text-zinc-500 mb-4">
+                Chat with an AI agent that can pay for content autonomously.
+              </p>
+
+              {/* Chat Messages */}
+              <div className="h-80 overflow-y-auto overflow-x-hidden mb-4 space-y-3 p-3 bg-zinc-800/30 rounded-lg">
+                {messages.length === 0 ? (
+                  <div className="text-center text-zinc-500 text-sm py-8">
+                    <p>Start a conversation with the buyer agent.</p>
+                    <p className="mt-1">Try: &quot;Pay for {baseUrl}/api/article/x402-micropayments&quot;</p>
+                  </div>
+                ) : (
+                  messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg px-4 py-2 text-sm break-words overflow-hidden ${
+                          msg.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-zinc-700 text-zinc-100'
+                        }`}
+                      >
+                        {msg.parts.map((part, idx) => {
+                          switch (part.type) {
+                            case 'text':
+                              return <p key={idx} className="whitespace-pre-wrap break-words">{part.text}</p>
+                            case 'step-start':
+                              return null
+                            case 'dynamic-tool':
+                              return (
+                                <div key={idx} className="text-xs text-zinc-400 my-1 p-2 bg-zinc-800 rounded">
+                                  <span className="text-blue-400">{part.toolName}</span>
+                                  {part.state === 'input-streaming' && (
+                                    <span className="ml-2 text-zinc-500">streaming...</span>
+                                  )}
+                                  {part.state === 'input-available' && (
+                                    <span className="ml-2 text-zinc-500">running...</span>
+                                  )}
+                                  {part.state === 'output-available' && (
+                                    <pre className="mt-1 overflow-x-auto max-h-32">
+                                      {JSON.stringify(part.output, null, 2)}
+                                    </pre>
+                                  )}
+                                  {part.state === 'output-error' && (
+                                    <span className="ml-2 text-red-400">Error: {part.errorText}</span>
+                                  )}
+                                </div>
+                              )
+                            default:
+                              return null
+                          }
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {status === 'streaming' && (
+                  <div className="flex justify-start">
+                    <div className="bg-zinc-700 text-zinc-400 rounded-lg px-4 py-2 text-sm animate-pulse">
+                      Thinking...
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input + Button */}
+              <form onSubmit={(e) => { e.preventDefault(); runBuyerAgent(); }} className="flex gap-3">
+                <input
+                  type="text"
+                  value={agentInput}
+                  onChange={(e) => setAgentInput(e.target.value)}
+                  placeholder="Ask the agent to pay for content..."
+                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                  disabled={status !== 'ready'}
+                />
+                <button
+                  type="submit"
+                  disabled={status !== 'ready' || !agentInput.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                >
+                  {status !== 'ready' ? 'Sending...' : 'Send'}
+                </button>
+              </form>
             </div>
 
           </div>

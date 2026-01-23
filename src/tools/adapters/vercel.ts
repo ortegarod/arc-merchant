@@ -11,7 +11,7 @@
  */
 
 import { tool } from 'ai';
-import { arcTools } from '../core.js';
+import { arcTools } from '../core';
 
 // Convert core tools to Vercel AI SDK format
 export const vercelTools = Object.fromEntries(
@@ -26,4 +26,4 @@ export const vercelTools = Object.fromEntries(
 );
 
 // Re-export for convenience
-export { arcTools } from '../core.js';
+export { arcTools } from '../core';
