@@ -14,7 +14,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Arc Merchant - x402 Payments for AI Agents",
-  description: "Merchant infrastructure for AI agent payments. Content creators get paid in USDC when autonomous agents access paywalled content via x402 on Arc.",
+  description: "Full end-to-end agentic commerce on Arc. Sell content to AI agents, get paid in USDC via x402. Watch payments land on-chain in real time.",
+  icons: {
+    icon: "/arc-merchant-logo.png",
+    apple: "/arc-merchant-logo.png",
+  },
+  openGraph: {
+    images: ["/arc-merchant-logo.png"],
+  },
 };
 
 export default function RootLayout({

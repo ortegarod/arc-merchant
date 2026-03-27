@@ -123,13 +123,16 @@ export default function MerchantDashboard() {
       {/* Header */}
       <header className="border-b border-zinc-800 p-6">
         <div className="mx-auto max-w-6xl flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
+            <img src="/arc-merchant-logo.png" alt="Arc Merchant" className="w-9 h-9 rounded-lg" />
+            <div>
             <h1 className="text-2xl font-bold">
               <span className="text-blue-400">Arc</span> Merchant Dashboard
             </h1>
             <p className="text-sm text-zinc-500 mt-1">
-              Real-time payment tracking for x402 paywalled content
+              Sell content to AI agents. Watch payments land on-chain in real time.
             </p>
+            </div>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 text-sm text-zinc-400">
@@ -427,7 +430,7 @@ export default function MerchantDashboard() {
       {/* Footer */}
       <footer className="border-t border-zinc-800 p-4 mt-8">
         <div className="mx-auto max-w-6xl text-center text-sm text-zinc-600">
-          Built for Circle/Arc Agentic Commerce Hackathon
+          Powered by Arc · Circle · x402
         </div>
       </footer>
     </div>

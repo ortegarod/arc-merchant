@@ -14,20 +14,22 @@ https://github.com/ortegarod/arc-merchant
 ## YouTube Video
 
 **Title:**
-Arc Merchant — AI Agent Payment Infrastructure on Arc Blockchain
+Arc Merchant — Autonomous x402 Micropayments on Arc | Agentic Commerce Hackathon Submission
 
 **Description:**
-This is our submission video for the Agentic Commerce on Arc Hackathon (January 2026). 🏆 2nd Place — Best Use of AI Agent.
+This is my hackathon submission video for the Agentic Commerce on Arc Hackathon (January 2026). 🏆 2nd Place — Best Use of Google Gemini.
 
-Arc Merchant is merchant infrastructure for autonomous AI agent payments on Arc blockchain. AI agents discover paywalled content, pay via x402 micropayments using Circle wallets, and receive content — with no human in the loop.
+Arc Merchant is a full end-to-end demo of agentic commerce on Arc blockchain. AI agents autonomously discover paywalled content, pay 0.01 USDC via x402 using Circle Developer-Controlled Wallets, and receive content — no human approval required.
 
-Built with Circle Developer-Controlled Wallets, x402 payment protocol, and an MCP server so Claude Code agents can pay autonomously. Includes a real-time merchant dashboard showing payments as they arrive on-chain.
+The merchant dashboard shows payments landing on-chain in real time. A built-in buyer agent lets you watch the full loop from one page — agent pays, merchant receives.
 
-Built by Rodrigo Ortega + Kyro (AI agent co-founder).
+Hackathon submission: https://lablab.ai/ai-hackathons/agentic-commerce-on-arc/status-402/arc-merchant-autonomous-x402-micropayments
 
-🛒 GitHub: https://github.com/ortegarod/arc-merchant
-💳 Protocol: x402 (HTTP 402 micropayments)
-🔗 Chain: Arc L1 (Circle) — native USDC gas
+Note: This video was recorded for the hackathon. A dedicated demo video is coming soon.
+
+🌐 Live: https://arc-merchant-production.up.railway.app
+🐙 GitHub: https://github.com/ortegarod/arc-merchant
+💳 Protocol: x402 · Chain: Arc L1 · Payments: Circle USDC
 
 ---
 
@@ -36,9 +38,9 @@ Merchant infrastructure for autonomous AI agent payments on Arc — x402, Circle
 
 ---
 
-## Surge Full Description (500 chars max — current: 468)
+## Surge Full Description (500 chars max — current: 484)
 
-Arc Merchant is seller-side infrastructure for AI agent micropayments on Arc blockchain. Content sits behind x402 paywalls — agents get HTTP 402, pay 0.01 USDC via Circle Developer-Controlled Wallets, and receive content autonomously. A facilitator server settles payments on-chain. An MCP server lets Claude Code agents pay without writing code. Real-time merchant dashboard tracks revenue as it lands. 🏆 2nd Place, Agentic Commerce on Arc Hackathon.
+Arc Merchant is a full end-to-end demo of agentic commerce on Arc blockchain. Paywalled content sits behind x402 — agents pay 0.01 USDC via Circle wallets and receive it autonomously. A facilitator settles on-chain. An MCP server lets Claude Code agents pay without writing code. Built-in buyer agent lets you watch the full loop from one page. Real-time dashboard shows payments landing live. 🏆 2nd Place (Best Use of Google Gemini), Agentic Commerce on Arc Hackathon.
 
 ---
 
