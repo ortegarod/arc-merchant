@@ -1,6 +1,16 @@
 # Arc Merchant
 
-Merchant infrastructure for autonomous AI agent payments on Arc blockchain.
+**A full end-to-end demo of agentic commerce on Arc blockchain.**
+
+An AI agent discovers paywalled content, pays 0.01 USDC via x402, and receives it — autonomously, on-chain, no human approval. The merchant dashboard updates in real time as payments land.
+
+🏆 2nd Place — Agentic Commerce on Arc Hackathon (January 2026)
+🌐 Live demo: https://arc-merchant-production.up.railway.app
+📋 Roadmap: [ROADMAP.md](ROADMAP.md)
+
+---
+
+## What This Is
 
 ## What This Is
 
