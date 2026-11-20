@@ -8,9 +8,9 @@ An AI agent discovers paywalled content, pays 0.01 USDC via x402, and receives i
 🌐 Live demo: https://arc-merchant-production.up.railway.app
 📋 Roadmap: [ROADMAP.md](ROADMAP.md)
 
----
+![Arc Merchant Dashboard](public/dashboard.jpg)
 
-## What This Is
+---
 
 ## What This Is
 
