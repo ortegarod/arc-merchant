@@ -91,6 +91,7 @@ async function createCircleEvmSigner() {
       publicClient.readContract({
         ...args,
         args: args.args || [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- x402 signer passes an untyped ABI; viem's generics can't infer it
       } as any),
 
     verifyTypedData: (args: {
@@ -100,6 +101,7 @@ async function createCircleEvmSigner() {
       primaryType: string;
       message: Record<string, unknown>;
       signature: `0x${string}`;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- x402 passes untyped EIP-712 types; viem's generics can't infer them
     }) => publicClient.verifyTypedData(args as any),
 
     // Write operations use Circle SDK

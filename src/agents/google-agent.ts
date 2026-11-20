@@ -47,7 +47,7 @@ export async function runGoogleAgent(
   // Wrap the callable tool to track calls
   const trackedTool = {
     ...arcCallableTool,
-    callTool: async (calls: any) => {
+    callTool: async (calls: Parameters<typeof arcCallableTool.callTool>[0]) => {
       const results = await arcCallableTool.callTool(calls);
       // Track each call
       for (let i = 0; i < calls.length; i++) {
@@ -55,7 +55,7 @@ export async function runGoogleAgent(
         const result = results[i];
         console.log(`🔧 Calling: ${call.name}`);
         toolResults.push({
-          name: call.name,
+          name: call.name ?? 'unknown',
           result: result.functionResponse?.response,
         });
       }

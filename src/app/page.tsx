@@ -346,7 +346,7 @@ export default function MerchantDashboard() {
                                       a: (props) => (
                                         <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />
                                       ),
-                                      code: ({ inline, ...props }: any) => (
+                                      code: ({ inline, ...props }: React.ComponentProps<'code'> & { inline?: boolean }) => (
                                         inline ?
                                           <code {...props} className="bg-zinc-800 px-1 py-0.5 rounded text-sm" /> :
                                           <code {...props} className="block bg-zinc-800 p-2 rounded text-sm overflow-x-auto my-2" />

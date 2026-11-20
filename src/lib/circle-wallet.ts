@@ -5,6 +5,7 @@
  * pay for content via x402 micropayments on Arc blockchain.
  */
 
+import { asApiError } from './errors';
 import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -45,8 +46,8 @@ export async function createAgentWallet() {
 
     walletSetId = walletSetResponse.data.walletSet.id;
     console.log(`Created wallet set: ${walletSetId}`);
-  } catch (error: any) {
-    throw new Error(`Failed to create wallet set: ${error.message}`);
+  } catch (e) {
+    throw new Error(`Failed to create wallet set: ${asApiError(e).message}`);
   }
 
   // Step 2: Create wallet in the set
@@ -146,7 +147,8 @@ export async function signPaymentAuthorization(
     }
 
     return response.data.signature as `0x${string}`;
-  } catch (error: any) {
+  } catch (e) {
+    const error = asApiError(e);
     console.error('Circle signTypedData error:', {
       message: error.message,
       status: error.response?.status,
@@ -226,8 +228,9 @@ export async function getMerchantWallet(): Promise<{ id: string; address: `0x${s
 
   // Filter to Arc testnet EOA wallets and sort by ID for deterministic selection
   const arcWallets = wallets
-    .filter((w: any) => w.blockchain === 'ARC-TESTNET' && w.accountType === 'EOA')
-    .sort((a: any, b: any) => a.id.localeCompare(b.id));
+    // accountType is returned by the API but missing from the SDK's Wallet type
+    .filter((w) => w.blockchain === 'ARC-TESTNET' && (w as { accountType?: string }).accountType === 'EOA')
+    .sort((a, b) => a.id.localeCompare(b.id));
 
   if (arcWallets.length < 2) {
     throw new Error('Need at least 2 wallets (agent + merchant). Create more using arc_create_wallet MCP tool.');

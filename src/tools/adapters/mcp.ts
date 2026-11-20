@@ -16,6 +16,7 @@
  *   });
  */
 
+import { asApiError } from '../../lib/errors.js';
 import { z } from 'zod';
 import type { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { arcTools } from '../core.js';
@@ -55,7 +56,8 @@ export async function executeTool(name: string, args: unknown): Promise<CallTool
         },
       ],
     };
-  } catch (error: any) {
+  } catch (e) {
+    const error = asApiError(e);
     return {
       content: [
         {

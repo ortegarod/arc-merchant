@@ -60,7 +60,7 @@ export const arcCallableTool: CallableTool = {
         results.push({
           functionResponse: {
             name: call.name!,
-            response: result,
+            response: result as Record<string, unknown>,
           },
         });
       } catch (error) {

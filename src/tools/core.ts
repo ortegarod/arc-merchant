@@ -60,7 +60,8 @@ export interface CoreTool {
   name: string;
   description: string;
   inputSchema: z.ZodTypeAny;
-  execute: (input: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each tool has its own zod input type; a shared generic signature isn't worth the complexity
+  execute: (input: any) => Promise<unknown>;
 }
 
 // All 8 Arc payment tools
@@ -87,7 +88,7 @@ export const arcTools: Record<string, CoreTool> = {
     inputSchema: getBalanceSchema,
     execute: async ({ wallet_id }: z.infer<typeof getBalanceSchema>) => {
       const balances = await getWalletBalance(wallet_id);
-      const formatted = balances.map((b: any) => ({
+      const formatted = balances.map((b) => ({
         token: b.token?.symbol || 'Unknown',
         amount: b.amount || '0',
       }));
@@ -109,12 +110,12 @@ export const arcTools: Record<string, CoreTool> = {
       return {
         success: true,
         count: wallets.length,
-        wallets: wallets.map((w: any) => ({
+        wallets: wallets.map((w) => ({
           id: w.id,
           address: w.address,
           blockchain: w.blockchain,
           state: w.state,
-          accountType: w.accountType,
+          accountType: (w as { accountType?: string }).accountType, // returned by the API, missing from the SDK type
         })),
       };
     },
@@ -209,7 +210,7 @@ export const arcTools: Record<string, CoreTool> = {
 
       // Step 1: Get wallet info
       const walletsResponse = await circleClient.listWallets({});
-      const wallet = walletsResponse.data?.wallets?.find((w: any) => w.id === wallet_id);
+      const wallet = walletsResponse.data?.wallets?.find((w) => w.id === wallet_id);
 
       if (!wallet) {
         return { success: false, error: `Wallet ${wallet_id} not found` };

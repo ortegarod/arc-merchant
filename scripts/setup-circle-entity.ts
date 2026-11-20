@@ -9,6 +9,7 @@
  * Run once to set up Circle Developer-Controlled Wallets.
  */
 
+import { asApiError } from '../src/lib/errors';
 import { registerEntitySecretCiphertext } from '@circle-fin/developer-controlled-wallets';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -78,7 +79,8 @@ async function setupCircle() {
     console.log('📝 Next steps:');
     console.log('   npx tsx scripts/test-article-circle.ts');
 
-  } catch (error: any) {
+  } catch (e) {
+    const error = asApiError(e);
     console.error('❌ Registration failed:', error.message);
     if (error.response?.data) {
       console.error('Circle error:', JSON.stringify(error.response.data, null, 2));
