@@ -6,7 +6,6 @@ An AI agent discovers paywalled content, pays 0.01 USDC via x402, and receives i
 
 🏆 2nd Place — Agentic Commerce on Arc Hackathon (January 2026)
 🌐 Live demo: https://arc-merchant-production.up.railway.app
-📋 Roadmap: [ROADMAP.md](ROADMAP.md)
 
 ![Arc Merchant Dashboard](public/dashboard.jpg)
 
