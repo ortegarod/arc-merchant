@@ -31,11 +31,13 @@ interface StatsStore {
   cachedWalletAddress: string | null;
   balanceCacheTime: number;
   balanceNeedsRefresh: boolean;
+  // Failure backoff (prevents retry storms hammering Circle's API, e.g. after a rate limit)
+  balanceLastErrorTime: number;
+  balanceErrorBackoffMs: number;
 }
 
 // Extend globalThis to persist store across Next.js hot reloads
 declare global {
-  // eslint-disable-next-line no-var
   var statsStore: StatsStore | undefined;
 }
 
@@ -50,6 +52,8 @@ const store: StatsStore = globalThis.statsStore || {
   cachedWalletAddress: null,
   balanceCacheTime: 0,
   balanceNeedsRefresh: true,
+  balanceLastErrorTime: 0,
+  balanceErrorBackoffMs: 0,
 };
 
 // Save reference to globalThis so it persists
@@ -114,10 +118,18 @@ export function resetStats() {
   store.cachedWalletAddress = null;
   store.balanceCacheTime = 0;
   store.balanceNeedsRefresh = true;
+  store.balanceLastErrorTime = 0;
+  store.balanceErrorBackoffMs = 0;
 }
 
 // Balance cache TTL: 30 seconds
 const BALANCE_CACHE_TTL = 30 * 1000;
+
+// Failure backoff: start at 30s, double each consecutive failure, cap at 5 min.
+// Without this, a single Circle API error (e.g. a rate limit) causes every
+// subsequent poll to immediately retry and fail again forever.
+const BALANCE_ERROR_BACKOFF_BASE_MS = 30 * 1000;
+const BALANCE_ERROR_BACKOFF_MAX_MS = 5 * 60 * 1000;
 
 /**
  * Check if balance needs to be refreshed
@@ -125,12 +137,34 @@ const BALANCE_CACHE_TTL = 30 * 1000;
  * - A payment was just recorded (balanceNeedsRefresh flag)
  * - Cache is older than TTL
  * - No cached value
+ * ...but never before the current error backoff window has elapsed, if the
+ * last attempt failed.
  */
 export function shouldRefreshBalance(): boolean {
+  if (store.balanceLastErrorTime > 0) {
+    const sinceError = Date.now() - store.balanceLastErrorTime;
+    if (sinceError < store.balanceErrorBackoffMs) return false;
+  }
   if (store.balanceNeedsRefresh) return true;
   if (!store.cachedBalance) return true;
   if (Date.now() - store.balanceCacheTime > BALANCE_CACHE_TTL) return true;
   return false;
+}
+
+/**
+ * Record a failed Circle API call. Doubles the backoff window each
+ * consecutive failure (capped) so repeated errors don't turn into a
+ * retry storm against Circle's API.
+ */
+export function recordBalanceFetchError(retryAfterMs?: number) {
+  store.balanceLastErrorTime = Date.now();
+  const nextBackoff = store.balanceErrorBackoffMs > 0
+    ? store.balanceErrorBackoffMs * 2
+    : BALANCE_ERROR_BACKOFF_BASE_MS;
+  store.balanceErrorBackoffMs = Math.min(
+    Math.max(nextBackoff, retryAfterMs ?? 0),
+    BALANCE_ERROR_BACKOFF_MAX_MS
+  );
 }
 
 /**
@@ -149,6 +183,9 @@ export function setCachedBalance(balance: string, walletId: string, walletAddres
   store.cachedWalletAddress = walletAddress;
   store.balanceCacheTime = Date.now();
   store.balanceNeedsRefresh = false;
+  // Success clears any error backoff
+  store.balanceLastErrorTime = 0;
+  store.balanceErrorBackoffMs = 0;
 }
 
 /**

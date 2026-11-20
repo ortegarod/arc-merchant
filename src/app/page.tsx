@@ -88,10 +88,13 @@ export default function MerchantDashboard() {
     }
   }
 
-  // Poll every 3 seconds
+  // Poll every 10 seconds. The stats endpoint itself is cheap (in-memory),
+  // but this cadence also governs how often we're willing to check in with
+  // Circle's API on cache-miss, so keep it well above the 3s that previously
+  // caused a retry storm against api.circle.com.
   useEffect(() => {
     fetchStats()
-    const interval = setInterval(fetchStats, 3000)
+    const interval = setInterval(fetchStats, 10000)
     return () => clearInterval(interval)
   }, [])
 

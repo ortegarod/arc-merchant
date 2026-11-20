@@ -6,8 +6,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, getCachedWallet, updatePaymentTxHash } from '@/lib/stats'
+import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, getCachedWallet, updatePaymentTxHash, recordBalanceFetchError } from '@/lib/stats'
 import { getMerchantWallet, getWalletBalance } from '@/lib/circle-wallet'
+import { asApiError } from '@/lib/errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +27,8 @@ export async function GET() {
       const balances = await getWalletBalance(wallet.id);
 
       // Token can be 'USDC' or 'USDC-TESTNET' depending on network
-      const usdcBalance = balances.find((b: any) =>
-        b.token?.symbol?.includes('USDC') || b.token?.includes('USDC')
+      const usdcBalance = balances.find((b: { token?: { symbol?: string } | string }) =>
+        typeof b.token === 'string' ? b.token.includes('USDC') : !!b.token?.symbol?.includes('USDC')
       );
       onChainBalance = usdcBalance?.amount || '0';
 
@@ -35,8 +36,15 @@ export async function GET() {
       setCachedBalance(onChainBalance, wallet.id, wallet.address);
       merchantWallet = { id: wallet.id, address: wallet.address };
       console.log(`📊 Balance updated: $${onChainBalance}`);
-    } catch (error) {
-      console.error('Failed to get merchant wallet:', error);
+    } catch (e) {
+      const error = asApiError(e);
+      // Respect Circle/Cloudflare's Retry-After hint when present so we don't
+      // hammer the API again before it's actually willing to answer.
+      const retryAfterSec = (error.response?.data as { retry_after?: unknown } | undefined)?.retry_after;
+      const retryAfterMs = typeof retryAfterSec === 'number' ? retryAfterSec * 1000 : undefined;
+      recordBalanceFetchError(retryAfterMs);
+      const status = error.response?.status;
+      console.error(`Failed to get merchant wallet (status ${status ?? 'unknown'}), backing off:`, error.message);
     }
   }
 
