@@ -90,6 +90,7 @@ src/app/page.tsx             → Merchant dashboard
 
 ```bash
 npm install
+npm run hooks:install   # enable the commit and push checks in .githooks/
 ```
 
 ### 2. Configure environment variables

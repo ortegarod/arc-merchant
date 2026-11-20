@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Runs before every push:
+#   1. no force push, no deleting main
+#   2. every outgoing commit is authored by the approved identity (.git/info/commit-identity)
+#   3. leak scan of every outgoing commit, its message, and the full tree being pushed
+#   4. type check, lint and production build of exactly the commit being pushed, in a clean worktree
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+root=$(pwd)
+zero=0000000000000000000000000000000000000000
+identity_file="$(git rev-parse --git-common-dir)/info/commit-identity"
+[[ -s "$identity_file" ]] || { echo "❌ missing $identity_file (approved 'Name <email>')" >&2; exit 1; }
+identity=$(head -1 "$identity_file")
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_ref:-}" ]] && continue
+  if [[ "$local_sha" == "$zero" ]]; then
+    [[ "$remote_ref" == refs/heads/main ]] && { echo "❌ refusing to delete main" >&2; exit 1; }
+    continue
+  fi
+  if [[ "$remote_sha" == "$zero" ]]; then
+    base=$(git merge-base "$local_sha" origin/main)
+  else
+    git merge-base --is-ancestor "$remote_sha" "$local_sha" || { echo "❌ non-fast-forward push to $remote_ref" >&2; exit 1; }
+    base="$remote_sha"
+  fi
+  [[ "$base" == "$local_sha" ]] && continue
+
+  echo "▶ pushing $(git rev-list --count "$base..$local_sha") commit(s) to $remote_ref"
+  bad=$(git log --format='%h|%an <%ae>|%cn <%ce>' "$base..$local_sha" | awk -F'|' -v id="$identity" '$2 != id || $3 != id {print "  " $1 " " $2 " / " $3}')
+  [[ -z "$bad" ]] || { echo "❌ commits not authored by the approved identity:" >&2; echo "$bad" >&2; exit 1; }
+  echo "✓ commit identity"
+
+  node .githooks/leak-scan.mjs push "$base" "$local_sha"
+
+  # Build the exact commit being pushed. Sibling dir so node_modules can be hardlinked
+  # (Turbopack rejects a symlinked node_modules).
+  wt=$(mktemp -d "$(dirname "$root")/.arc-merchant-prepush.XXXXXX")
+  cleanup() { git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || true; rm -rf "$wt"; }
+  trap cleanup EXIT
+  git worktree add --detach --quiet "$wt" "$local_sha"
+  cp -al "$root/node_modules" "$wt/node_modules"
+  (
+    cd "$wt"
+    npx --no-install tsc --noEmit && echo "✓ typecheck"
+    npx --no-install eslint . && echo "✓ lint"
+    # The build only checks that Circle credentials are set, so placeholders are enough.
+    CIRCLE_API_KEY=build-placeholder CIRCLE_ENTITY_SECRET=build-placeholder NEXT_TELEMETRY_DISABLED=1 \
+      npx --no-install next build > build.log 2>&1 || { tail -40 build.log >&2; echo "❌ build failed" >&2; exit 1; }
+    echo "✓ build"
+  )
+  cleanup; trap - EXIT
+done

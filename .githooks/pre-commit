@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Runs before every commit: leak scan on staged changes, type check, lint on staged files.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+node .githooks/leak-scan.mjs staged
+
+npx --no-install tsc --noEmit
+echo "✓ typecheck"
+
+mapfile -t files < <(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|mjs|js)$' || true)
+if (( ${#files[@]} )); then
+  npx --no-install eslint "${files[@]}"
+  echo "✓ lint"
+fi

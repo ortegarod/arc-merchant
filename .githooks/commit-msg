@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Every commit needs a clear subject and a body explaining why.
+set -euo pipefail
+node "$(git rev-parse --show-toplevel)/.githooks/leak-scan.mjs" message "$1"

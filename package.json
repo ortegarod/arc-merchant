@@ -12,7 +12,10 @@
     "setup-circle": "tsx scripts/setup-circle-entity.ts",
     "agent:vercel": "tsx scripts/agent-vercel-demo.ts",
     "agent:google": "tsx scripts/agent-google-demo.ts",
-    "wallet": "tsx scripts/wallet-cli.ts"
+    "wallet": "tsx scripts/wallet-cli.ts",
+    "typecheck": "tsc --noEmit",
+    "smoke": "bash scripts/smoke.sh",
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.10",
