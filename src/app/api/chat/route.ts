@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const { messages }: { messages: UIMessage[] } = await request.json();
 
   const result = streamText({
-    model: google("gemini-2.0-flash"),
+    model: google("gemini-3.6-flash"),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
     tools: vercelTools,
