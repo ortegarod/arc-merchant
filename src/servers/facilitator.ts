@@ -27,6 +27,8 @@ import {
 dotenv.config({ path: ".env.local" });
 
 const PORT = process.env.PORT || "4022";
+// Bind address. Defaults to localhost; set FACILITATOR_HOST to listen on another interface.
+const HOST = process.env.FACILITATOR_HOST || "127.0.0.1";
 const ARC_NETWORK = "eip155:5042002";
 
 if (!process.env.CIRCLE_FACILITATOR_WALLET_ID) {
@@ -274,8 +276,8 @@ async function main() {
 
     const address = await getFacilitatorAddress();
 
-    app.listen(parseInt(PORT), () => {
-      console.log(`\n🚀 Arc x402 Facilitator (Circle SDK) running on http://localhost:${PORT}`);
+    app.listen(parseInt(PORT), HOST, () => {
+      console.log(`\n🚀 Arc x402 Facilitator (Circle SDK) running on http://${HOST}:${PORT}`);
       console.log(`   Network: ${ARC_NETWORK} (Arc Testnet)`);
       console.log(`   Wallet: ${address} (Circle-managed)`);
       console.log(`   Endpoints: POST /verify, POST /settle, GET /supported, GET /health\n`);
