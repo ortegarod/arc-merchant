@@ -119,6 +119,8 @@ npm run setup-circle
 
 This generates and registers your Entity Secret with Circle (updates `CIRCLE_ENTITY_SECRET`).
 
+**Why both an API key and an Entity Secret?** They authorize different things. `CIRCLE_API_KEY` authenticates the request itself (who's calling Circle's API) and can be rotated/revoked freely. `CIRCLE_ENTITY_SECRET` is a separate 32-byte private key that *authorizes the wallet operation* the request performs (create wallet, sign a tx, etc.) — it's the actual key to your wallets, Circle never stores a copy of it, and losing it with no recovery file means permanently losing access to the wallets and funds it controls. Treat it like a private key, not an API token: never commit it, never put it in app config that ends up in logs. See [Circle's entity secret docs](https://developers.circle.com/wallets/dev-controlled/entity-secret-management) for the full model (ciphertext, wallet sets, recovery file, rotation).
+
 ### 4. Configure facilitator wallet
 
 Create a Circle wallet to use as your facilitator (settles payments on-chain):
