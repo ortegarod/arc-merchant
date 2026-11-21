@@ -4,7 +4,6 @@
 
 An AI agent discovers paywalled content, pays 0.01 USDC via x402, and receives it — autonomously, on-chain, no human approval. The merchant dashboard updates in real time as payments land.
 
-🏆 2nd Place — Agentic Commerce on Arc Hackathon (January 2026)
 🌐 Live demo: https://arc-merchant-production.up.railway.app
 
 ![Arc Merchant Dashboard](public/dashboard.jpg)
