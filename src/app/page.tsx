@@ -47,6 +47,7 @@ interface Stats {
   articleStats: ArticleStats[]
   merchantWallet: MerchantWallet | null
   onChainBalance: string | null
+  buyerAgentEnabled: boolean
 }
 
 export default function MerchantDashboard() {
@@ -311,120 +312,131 @@ export default function MerchantDashboard() {
               )}
             </div>
 
-            {/* Buyer Agent */}
-            <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6">
-              <h2 className="text-lg font-semibold mb-4">Buyer Agent</h2>
-              <p className="text-sm text-zinc-500 mb-4">
-                Chat with an AI agent that can pay for content autonomously.
-              </p>
+            {/* Buyer Agent (disabled on public deployments via ENABLE_BUYER_AGENT=false) */}
+            {stats?.buyerAgentEnabled ? (
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+                <h2 className="text-lg font-semibold mb-4">Buyer Agent</h2>
+                <p className="text-sm text-zinc-500 mb-4">
+                  Chat with an AI agent that can pay for content autonomously.
+                </p>
 
-              {/* Chat Messages */}
-              <div className="h-80 overflow-y-auto overflow-x-hidden mb-4 space-y-3 p-3 bg-zinc-800/30 rounded-lg">
-                {messages.length === 0 ? (
-                  <div className="text-center text-zinc-500 text-sm py-8">
-                    <p>Start a conversation with the buyer agent.</p>
-                    <p className="mt-1">Try: &quot;Pay for {baseUrl}/api/article/x402-micropayments&quot;</p>
-                  </div>
-                ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                {/* Chat Messages */}
+                <div className="h-80 overflow-y-auto overflow-x-hidden mb-4 space-y-3 p-3 bg-zinc-800/30 rounded-lg">
+                  {messages.length === 0 ? (
+                    <div className="text-center text-zinc-500 text-sm py-8">
+                      <p>Start a conversation with the buyer agent.</p>
+                      <p className="mt-1">Try: &quot;Pay for {baseUrl}/api/article/x402-micropayments&quot;</p>
+                    </div>
+                  ) : (
+                    messages.map((msg) => (
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 text-sm break-words overflow-hidden ${
-                          msg.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-zinc-700 text-zinc-100'
-                        }`}
+                        key={msg.id}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        {msg.parts.map((part, idx) => {
-                          switch (part.type) {
-                            case 'text':
-                              return (
-                                <div key={idx}>
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      a: (props) => (
-                                        <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />
-                                      ),
-                                      code: ({ inline, ...props }: React.ComponentProps<'code'> & { inline?: boolean }) => (
-                                        inline ?
-                                          <code {...props} className="bg-zinc-800 px-1 py-0.5 rounded text-sm" /> :
-                                          <code {...props} className="block bg-zinc-800 p-2 rounded text-sm overflow-x-auto my-2" />
-                                      ),
-                                      h1: (props) => <h1 {...props} className="text-xl font-bold mt-3 mb-2" />,
-                                      h2: (props) => <h2 {...props} className="text-lg font-bold mt-3 mb-2" />,
-                                      h3: (props) => <h3 {...props} className="text-base font-bold mt-2 mb-1" />,
-                                      ul: (props) => <ul {...props} className="list-disc ml-4 my-2" />,
-                                      ol: (props) => <ol {...props} className="list-decimal ml-4 my-2" />,
-                                      p: (props) => <p {...props} className="my-2" />,
-                                    }}
-                                  >
-                                    {part.text}
-                                  </ReactMarkdown>
-                                </div>
-                              )
-                            case 'step-start':
-                              return null
-                            case 'dynamic-tool':
-                              return (
-                                <div key={idx} className="text-xs text-zinc-400 my-1 p-2 bg-zinc-800 rounded">
-                                  <span className="text-blue-400">{part.toolName}</span>
-                                  {part.state === 'input-streaming' && (
-                                    <span className="ml-2 text-zinc-500">streaming...</span>
-                                  )}
-                                  {part.state === 'input-available' && (
-                                    <span className="ml-2 text-zinc-500">running...</span>
-                                  )}
-                                  {part.state === 'output-available' && (
-                                    <pre className="mt-1 overflow-x-auto max-h-32">
-                                      {JSON.stringify(part.output, null, 2)}
-                                    </pre>
-                                  )}
-                                  {part.state === 'output-error' && (
-                                    <span className="ml-2 text-red-400">Error: {part.errorText}</span>
-                                  )}
-                                </div>
-                              )
-                            default:
-                              return null
-                          }
-                        })}
+                        <div
+                          className={`max-w-[80%] rounded-lg px-4 py-2 text-sm break-words overflow-hidden ${
+                            msg.role === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-zinc-700 text-zinc-100'
+                          }`}
+                        >
+                          {msg.parts.map((part, idx) => {
+                            switch (part.type) {
+                              case 'text':
+                                return (
+                                  <div key={idx}>
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        a: (props) => (
+                                          <a {...props} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" />
+                                        ),
+                                        code: ({ inline, ...props }: React.ComponentProps<'code'> & { inline?: boolean }) => (
+                                          inline ?
+                                            <code {...props} className="bg-zinc-800 px-1 py-0.5 rounded text-sm" /> :
+                                            <code {...props} className="block bg-zinc-800 p-2 rounded text-sm overflow-x-auto my-2" />
+                                        ),
+                                        h1: (props) => <h1 {...props} className="text-xl font-bold mt-3 mb-2" />,
+                                        h2: (props) => <h2 {...props} className="text-lg font-bold mt-3 mb-2" />,
+                                        h3: (props) => <h3 {...props} className="text-base font-bold mt-2 mb-1" />,
+                                        ul: (props) => <ul {...props} className="list-disc ml-4 my-2" />,
+                                        ol: (props) => <ol {...props} className="list-decimal ml-4 my-2" />,
+                                        p: (props) => <p {...props} className="my-2" />,
+                                      }}
+                                    >
+                                      {part.text}
+                                    </ReactMarkdown>
+                                  </div>
+                                )
+                              case 'step-start':
+                                return null
+                              case 'dynamic-tool':
+                                return (
+                                  <div key={idx} className="text-xs text-zinc-400 my-1 p-2 bg-zinc-800 rounded">
+                                    <span className="text-blue-400">{part.toolName}</span>
+                                    {part.state === 'input-streaming' && (
+                                      <span className="ml-2 text-zinc-500">streaming...</span>
+                                    )}
+                                    {part.state === 'input-available' && (
+                                      <span className="ml-2 text-zinc-500">running...</span>
+                                    )}
+                                    {part.state === 'output-available' && (
+                                      <pre className="mt-1 overflow-x-auto max-h-32">
+                                        {JSON.stringify(part.output, null, 2)}
+                                      </pre>
+                                    )}
+                                    {part.state === 'output-error' && (
+                                      <span className="ml-2 text-red-400">Error: {part.errorText}</span>
+                                    )}
+                                  </div>
+                                )
+                              default:
+                                return null
+                            }
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {status === 'streaming' && (
+                    <div className="flex justify-start">
+                      <div className="bg-zinc-700 text-zinc-400 rounded-lg px-4 py-2 text-sm animate-pulse">
+                        Thinking...
                       </div>
                     </div>
-                  ))
-                )}
-                {status === 'streaming' && (
-                  <div className="flex justify-start">
-                    <div className="bg-zinc-700 text-zinc-400 rounded-lg px-4 py-2 text-sm animate-pulse">
-                      Thinking...
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
 
-              {/* Input + Button */}
-              <form onSubmit={(e) => { e.preventDefault(); runBuyerAgent(); }} className="flex gap-3">
-                <input
-                  type="text"
-                  value={agentInput}
-                  onChange={(e) => setAgentInput(e.target.value)}
-                  placeholder="Ask the agent to pay for content..."
-                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-                  disabled={status !== 'ready'}
-                />
-                <button
-                  type="submit"
-                  disabled={status !== 'ready' || !agentInput.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
-                >
-                  {status !== 'ready' ? 'Sending...' : 'Send'}
-                </button>
-              </form>
-            </div>
+                {/* Input + Button */}
+                <form onSubmit={(e) => { e.preventDefault(); runBuyerAgent(); }} className="flex gap-3">
+                  <input
+                    type="text"
+                    value={agentInput}
+                    onChange={(e) => setAgentInput(e.target.value)}
+                    placeholder="Ask the agent to pay for content..."
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                    disabled={status !== 'ready'}
+                  />
+                  <button
+                    type="submit"
+                    disabled={status !== 'ready' || !agentInput.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                  >
+                    {status !== 'ready' ? 'Sending...' : 'Send'}
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6">
+                <h2 className="text-lg font-semibold mb-4">Pay With Your Own Agent</h2>
+                <p className="text-sm text-zinc-400">
+                  Any x402 client can buy from the endpoints above: request one, receive a
+                  402 with the price, sign a USDC payment on Arc, and retry with it. Payments
+                  show up in Recent Payments as soon as they settle.
+                </p>
+              </div>
+            )}
 
           </div>
         )}

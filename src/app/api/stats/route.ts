@@ -10,6 +10,7 @@ import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, get
 import { getMerchantWallet, getWalletBalance } from '@/lib/circle-wallet'
 import { asApiError } from '@/lib/errors'
 import { requireAdmin } from '@/lib/admin'
+import { isBuyerAgentEnabled } from '@/lib/features'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,6 +54,7 @@ export async function GET() {
     ...stats,
     merchantWallet,
     onChainBalance,
+    buyerAgentEnabled: isBuyerAgentEnabled(),
   })
 }
 

@@ -1,6 +1,7 @@
 import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { vercelTools } from "@/tools/adapters/vercel";
+import { isBuyerAgentEnabled } from "@/lib/features";
 
 export const maxDuration = 60;
 
@@ -29,6 +30,10 @@ CRITICAL: The user paid for the content, so you MUST show them the complete arti
 Be autonomous and decisive. Format responses in markdown with proper headings, lists, and links.`;
 
 export async function POST(request: Request) {
+  if (!isBuyerAgentEnabled()) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
+
   const { messages }: { messages: UIMessage[] } = await request.json();
 
   const result = streamText({
