@@ -19,7 +19,10 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     continue
   fi
   if [[ "$remote_sha" == "$zero" ]]; then
-    base=$(git merge-base "$local_sha" origin/main)
+    # New branch, or first push to an empty downstream repo: scan everything not
+    # already on origin/main, or on upstream/main when origin has no main yet.
+    base=$(git merge-base "$local_sha" origin/main 2>/dev/null || git merge-base "$local_sha" upstream/main 2>/dev/null) \
+      || { echo "❌ no origin/main or upstream/main to compare against; fetch first" >&2; exit 1; }
   else
     git merge-base --is-ancestor "$remote_sha" "$local_sha" || { echo "❌ non-fast-forward push to $remote_ref" >&2; exit 1; }
     base="$remote_sha"
