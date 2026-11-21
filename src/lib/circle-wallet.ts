@@ -8,7 +8,6 @@
 import { asApiError } from './errors';
 import { ARC } from './arc'
 import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
-import type { Blockchain } from '@circle-fin/developer-controlled-wallets';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -55,7 +54,7 @@ export async function createAgentWallet() {
   // Step 2: Create wallet in the set
   const response = await circleClient.createWallets({
     accountType: 'EOA', // Externally Owned Account (no deployment needed)
-    blockchains: [ARC.circleBlockchain as Blockchain], // see the SDK note in transferUSDC
+    blockchains: [ARC.circleBlockchain],
     count: 1,
     walletSetId,
   });
@@ -203,8 +202,7 @@ export async function transferUSDC(
   amount: string // Human-readable amount like "1.50"
 ) {
   const response = await circleClient.createTransaction({
-    // SDK 9.x types only list ARC-TESTNET; 'ARC' (mainnet) needs the cast until the SDK is upgraded
-    blockchain: ARC.circleBlockchain as 'ARC-TESTNET',
+    blockchain: ARC.circleBlockchain,
     walletAddress,
     tokenAddress: '0x3600000000000000000000000000000000000000', // Arc USDC (native precompile)
     amount: [amount],
