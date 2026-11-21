@@ -13,6 +13,20 @@ export const dynamic = 'force-dynamic'
 
 type RouteContext = { params: Promise<{ slug: string }> }
 
+// Behind a proxy (e.g. Railway) req.url is the internal address, so build the
+// public URL for the x402 resource from PUBLIC_BASE_URL or forwarded headers.
+function publicResourceUrl(req: NextRequest): string {
+  const path = req.nextUrl.pathname
+  const base = process.env.PUBLIC_BASE_URL?.replace(/\/+$/, '')
+  if (base) return base + path
+  const host = req.headers.get('x-forwarded-host')?.split(',')[0].trim()
+  if (host) {
+    const proto = req.headers.get('x-forwarded-proto')?.split(',')[0].trim() || 'https'
+    return `${proto}://${host}${path}`
+  }
+  return req.nextUrl.origin + path
+}
+
 function createHandler(article: Article) {
   return async (): Promise<NextResponse> => {
     return NextResponse.json(article)
@@ -51,6 +65,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
           asset: ARC_CONTRACTS.USDC,
         },
       }],
+      resource: publicResourceUrl(req),
       description: article.title,
       mimeType: 'application/json',
     },
