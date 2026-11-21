@@ -4,11 +4,11 @@
 
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
-import { ARC_CONTRACTS } from "./arc";
+import { ARC, ARC_CONTRACTS } from "./arc";
 import { getMerchantWallet } from "./circle-wallet";
 
 // Arc network identifier
-export const ARC_NETWORK = "eip155:5042002";
+export const ARC_NETWORK = ARC.caip2;
 
 // Facilitator URL (our facilitator server)
 const facilitatorUrl = process.env.FACILITATOR_URL || "http://localhost:4022";

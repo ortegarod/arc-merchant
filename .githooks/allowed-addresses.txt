@@ -1,5 +1,6 @@
-# Public contract addresses this project references (Arc testnet). One per line, with what it is.
+# Public contract addresses this project references (Arc testnet and mainnet). One per line, with what it is.
 0x3600000000000000000000000000000000000000   # USDC (native precompile)
-0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a   # EURC
+0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a   # EURC (testnet)
+0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1   # EURC (mainnet, docs.arc.io contract-addresses)
 0x000000000022D473030F116dDEE9F6B43aC78BA3   # Permit2 (canonical)
 0x1f91886C7028986aD885ffCee0e40b75C9cd5aC1   # FX escrow

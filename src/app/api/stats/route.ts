@@ -11,6 +11,7 @@ import { getMerchantWallet, getWalletBalance } from '@/lib/circle-wallet'
 import { asApiError } from '@/lib/errors'
 import { requireAdmin } from '@/lib/admin'
 import { isBuyerAgentEnabled } from '@/lib/features'
+import { ARC } from '@/lib/arc'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,7 @@ export async function GET() {
     merchantWallet,
     onChainBalance,
     buyerAgentEnabled: isBuyerAgentEnabled(),
+    network: { name: ARC.name, caip2: ARC.caip2, explorerUrl: ARC.explorerUrl, testnet: ARC.isTestnet },
   })
 }
 

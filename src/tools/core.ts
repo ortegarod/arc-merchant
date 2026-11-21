@@ -17,7 +17,7 @@ import {
   signPaymentAuthorization,
   circleClient,
 } from '../lib/circle-wallet';
-import { ARC_CONTRACTS } from '../lib/arc';
+import { ARC_CONTRACTS, explorerTxUrl } from '../lib/arc';
 
 // Tool schemas
 const createWalletSchema = z.object({});
@@ -194,7 +194,7 @@ export const arcTools: Record<string, CoreTool> = {
       return {
         success: true,
         transaction: tx_hash,
-        explorer_url: `https://testnet.arcscan.app/tx/${tx_hash}`,
+        explorer_url: explorerTxUrl(tx_hash),
         message: 'View transaction details on Arc Explorer',
       };
     },
@@ -328,7 +328,7 @@ export const arcTools: Record<string, CoreTool> = {
         paid: true,
         price_usdc: priceUSDC,
         transaction: txHash,
-        explorer_url: txHash ? `https://testnet.arcscan.app/tx/${txHash}` : null,
+        explorer_url: txHash ? explorerTxUrl(txHash) : null,
         content: content.substring(0, 1000) + (content.length > 1000 ? '...' : ''),
         full_content_length: content.length,
       };

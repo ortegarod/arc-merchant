@@ -3,6 +3,7 @@
  */
 
 import { NextRequest } from 'next/server'
+import { ARC } from '@/lib/arc'
 import { buildCatalog } from '@/lib/catalog'
 import { publicOrigin } from '@/lib/public-url'
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     'read the base64 `PAYMENT-REQUIRED` header from the 402 response, sign an EIP-3009',
     '`TransferWithAuthorization` for the amount, and retry with a `PAYMENT-SIGNATURE` header.',
     '',
-    `- Network: ${c.network} (Arc testnet)`,
+    `- Network: ${c.network} (${ARC.name})`,
     `- Asset: USDC at ${c.asset} (6 decimals)`,
     ...(c.payTo ? [`- Pay to: ${c.payTo}`] : []),
     `- Machine-readable catalog: ${origin}/api/catalog`,

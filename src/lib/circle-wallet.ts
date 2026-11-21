@@ -6,7 +6,9 @@
  */
 
 import { asApiError } from './errors';
+import { ARC } from './arc'
 import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
+import type { Blockchain } from '@circle-fin/developer-controlled-wallets';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -53,7 +55,7 @@ export async function createAgentWallet() {
   // Step 2: Create wallet in the set
   const response = await circleClient.createWallets({
     accountType: 'EOA', // Externally Owned Account (no deployment needed)
-    blockchains: ['ARC-TESTNET'],
+    blockchains: [ARC.circleBlockchain as Blockchain], // see the SDK note in transferUSDC
     count: 1,
     walletSetId,
   });
@@ -122,7 +124,7 @@ export async function signPaymentAuthorization(
     domain: {
       name: 'USDC',
       version: '2',
-      chainId: 5042002, // Arc testnet
+      chainId: ARC.chainId,
       verifyingContract: usdcContract,
     },
     message: {
@@ -181,6 +183,7 @@ export async function requestTestnetTokens(
   address: string,
   options: { usdc?: boolean; eurc?: boolean; native?: boolean } = { usdc: true }
 ) {
+  if (!ARC.isTestnet) throw new Error('The Circle faucet only works on Arc testnet');
   const response = await circleClient.requestTestnetTokens({
     address,
     blockchain: 'ARC-TESTNET',
@@ -200,7 +203,8 @@ export async function transferUSDC(
   amount: string // Human-readable amount like "1.50"
 ) {
   const response = await circleClient.createTransaction({
-    blockchain: 'ARC-TESTNET' as const,
+    // SDK 9.x types only list ARC-TESTNET; 'ARC' (mainnet) needs the cast until the SDK is upgraded
+    blockchain: ARC.circleBlockchain as 'ARC-TESTNET',
     walletAddress,
     tokenAddress: '0x3600000000000000000000000000000000000000', // Arc USDC (native precompile)
     amount: [amount],
@@ -226,10 +230,10 @@ export async function transferUSDC(
 export async function getMerchantWallet(): Promise<{ id: string; address: `0x${string}` }> {
   const wallets = await listWallets();
 
-  // Filter to Arc testnet EOA wallets and sort by ID for deterministic selection
+  // Filter to EOA wallets on the selected Arc network and sort by ID for deterministic selection
   const arcWallets = wallets
     // accountType is returned by the API but missing from the SDK's Wallet type
-    .filter((w) => w.blockchain === 'ARC-TESTNET' && (w as { accountType?: string }).accountType === 'EOA')
+    .filter((w) => w.blockchain === ARC.circleBlockchain && (w as { accountType?: string }).accountType === 'EOA')
     .sort((a, b) => a.id.localeCompare(b.id));
 
   if (arcWallets.length < 2) {

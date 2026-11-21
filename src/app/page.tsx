@@ -49,7 +49,11 @@ interface Stats {
   merchantWallet: MerchantWallet | null
   onChainBalance: string | null
   buyerAgentEnabled: boolean
+  network?: { name: string; caip2: string; explorerUrl: string; testnet: boolean }
 }
+
+// Explorer of the network the server reports; testnet until the first stats load
+const DEFAULT_EXPLORER = 'https://explorer.testnet.arc.io'
 
 export default function MerchantDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
@@ -133,6 +137,11 @@ export default function MerchantDashboard() {
             <div>
             <h1 className="text-2xl font-bold">
               <span className="text-blue-400">Arc</span> Merchant Dashboard
+              {stats?.network && (
+                <span className={`ml-2 align-middle rounded-full px-2 py-0.5 text-xs font-medium ${stats.network.testnet ? 'bg-amber-900/40 text-amber-300 border border-amber-700/50' : 'bg-emerald-900/40 text-emerald-300 border border-emerald-700/50'}`}>
+                  {stats.network.testnet ? 'Testnet' : 'Mainnet'}
+                </span>
+              )}
             </h1>
             <p className="text-sm text-zinc-500 mt-1">
               Sell content to AI agents. Watch payments land on-chain in real time.
@@ -167,7 +176,7 @@ export default function MerchantDashboard() {
                   <div>
                     <p className="text-sm text-zinc-400 mb-1">Merchant Wallet (Circle)</p>
                     <a
-                      href={`https://testnet.arcscan.app/address/${stats.merchantWallet.address}`}
+                      href={`${stats.network?.explorerUrl ?? DEFAULT_EXPLORER}/address/${stats.merchantWallet.address}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-blue-300 hover:text-blue-200 font-mono"
@@ -279,7 +288,7 @@ export default function MerchantDashboard() {
                           <div className="flex items-center gap-2 text-xs text-zinc-500">
                             {payment.txHash ? (
                               <a
-                                href={`https://testnet.arcscan.app/tx/${payment.txHash}`}
+                                href={`${stats.network?.explorerUrl ?? DEFAULT_EXPLORER}/tx/${payment.txHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-400 hover:text-blue-300 font-mono"

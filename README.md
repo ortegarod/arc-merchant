@@ -120,6 +120,7 @@ Optional settings (all off by default):
 |---|---|
 | `DATABASE_URL` | Postgres connection string. Payment history is stored there and survives restarts and redeploys. Without it, history lives in memory. |
 | `ADMIN_TOKEN` | Enables `POST /api/stats/reset` and `POST /api/stats` (record a late tx hash), called with `Authorization: Bearer <token>`. Without it, both return 404. |
+| `ARC_NETWORK` | `testnet` (default) or `mainnet`. Switches the chain id, RPC, explorer links, Circle blockchain code and token addresses everywhere, and the dashboard shows a Testnet/Mainnet badge. `ARC_RPC_URL` overrides the RPC. Mainnet needs a mainnet Circle API key and funded wallets. |
 | `PUBLIC_BASE_URL` | Public origin (e.g. `https://your-app.up.railway.app`) used as the payment request's resource URL. Unset = taken from the proxy's `X-Forwarded-Host`, falling back to the request URL. |
 | `ENABLE_BUYER_AGENT` | Set to `false` to remove the in-page buyer agent. It spends from the server's own wallets, so turn it off on any public deployment. |
 

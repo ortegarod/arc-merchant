@@ -2,7 +2,7 @@
  * Arc x402 Facilitator Server
  *
  * Based on x402 example: x402/examples/typescript/facilitator
- * Verifies and settles x402 payments on Arc testnet.
+ * Verifies and settles x402 payments on Arc (network chosen by ARC_NETWORK).
  */
 
 import { x402Facilitator } from "@x402/core/facilitator";
@@ -17,7 +17,7 @@ import { registerExactEvmScheme } from "@x402/evm/exact/facilitator";
 import dotenv from "dotenv";
 import express from "express";
 import { createPublicClient, http, Abi } from "viem";
-import { arcTestnet } from "../lib/arc";
+import { ARC, arcChain } from "../lib/arc";
 import {
   getWallet,
   executeContractCall,
@@ -29,7 +29,7 @@ dotenv.config({ path: ".env.local" });
 const PORT = process.env.PORT || "4022";
 // Bind address. Defaults to localhost; set FACILITATOR_HOST to listen on another interface.
 const HOST = process.env.FACILITATOR_HOST || "127.0.0.1";
-const ARC_NETWORK = "eip155:5042002";
+const ARC_NETWORK = ARC.caip2;
 
 if (!process.env.CIRCLE_FACILITATOR_WALLET_ID) {
   console.error("❌ CIRCLE_FACILITATOR_WALLET_ID environment variable is required");
@@ -50,7 +50,7 @@ async function getFacilitatorAddress(): Promise<`0x${string}`> {
 
 // Create viem public client (read-only, no wallet needed)
 const publicClient = createPublicClient({
-  chain: arcTestnet,
+  chain: arcChain,
   transport: http(),
 });
 
@@ -278,7 +278,7 @@ async function main() {
 
     app.listen(parseInt(PORT), HOST, () => {
       console.log(`\n🚀 Arc x402 Facilitator (Circle SDK) running on http://${HOST}:${PORT}`);
-      console.log(`   Network: ${ARC_NETWORK} (Arc Testnet)`);
+      console.log(`   Network: ${ARC_NETWORK} (${ARC.name})`);
       console.log(`   Wallet: ${address} (Circle-managed)`);
       console.log(`   Endpoints: POST /verify, POST /settle, GET /supported, GET /health\n`);
     });

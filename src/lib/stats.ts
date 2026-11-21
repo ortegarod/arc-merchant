@@ -8,6 +8,7 @@
  */
 
 import { getDb } from './db'
+import { ARC } from './arc'
 
 export interface Payment {
   slug: string;
@@ -37,7 +38,7 @@ export interface Stats {
 
 const RECENT_PAYMENTS_LIMIT = 10;
 const MEMORY_PAYMENTS_LIMIT = 50;
-const DEFAULT_NETWORK = 'eip155:5042002';
+const DEFAULT_NETWORK = ARC.caip2;
 
 interface StatsStore {
   payments: Payment[];
