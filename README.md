@@ -111,6 +111,24 @@ GOOGLE_GENERATIVE_AI_API_KEY=
 GEMINI_API_KEY=
 ```
 
+Optional settings (all off by default):
+
+| Variable | What it does |
+|---|---|
+| `DATABASE_URL` | Postgres connection string. Payment history is stored there and survives restarts and redeploys. Without it, history lives in memory. |
+| `ADMIN_TOKEN` | Enables `POST /api/stats/reset` and `POST /api/stats` (record a late tx hash), called with `Authorization: Bearer <token>`. Without it, both return 404. |
+| `ENABLE_BUYER_AGENT` | Set to `false` to remove the in-page buyer agent. It spends from the server's own wallets, so turn it off on any public deployment. |
+
+#### Payment history (optional Postgres)
+
+Point `DATABASE_URL` at any Postgres 13+ database. The schema is created automatically on first use, or run it yourself:
+
+```bash
+npm run db:migrate
+```
+
+Only data already public on-chain is stored: product, amount, transaction hash, payer address, network and time. The stats API returns payer addresses shortened. IP addresses, user agents, request headers and chat content are never stored.
+
 ### 3. Set up Circle Entity Secret (one-time)
 
 ```bash
