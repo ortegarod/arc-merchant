@@ -15,7 +15,7 @@ import { isBuyerAgentEnabled } from '@/lib/features'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const stats = getStats()
+  const stats = await getStats()
 
   // Use cached values
   let merchantWallet = getCachedWallet();
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const updated = updatePaymentTxHash(slug, payer, txHash)
+    const updated = await updatePaymentTxHash(slug, payer, txHash)
 
     if (updated) {
       console.log(`📊 Updated txHash for ${slug}: ${txHash}`)

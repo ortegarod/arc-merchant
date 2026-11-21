@@ -15,6 +15,6 @@ export async function POST(req: NextRequest) {
   const denied = requireAdmin(req)
   if (denied) return denied
 
-  resetStats()
+  await resetStats()
   return NextResponse.json({ success: true, message: 'Stats reset' })
 }

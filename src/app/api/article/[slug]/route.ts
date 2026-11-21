@@ -71,12 +71,13 @@ export async function GET(req: NextRequest, context: RouteContext) {
       } catch { /* ignore */ }
     }
 
-    recordPayment({
+    await recordPayment({
       slug: article.slug,
       amount: article.priceUsd,
       txHash,
       payer,
       timestamp: Date.now(),
+      network: ARC_NETWORK,
     }, article.title)
   }
 

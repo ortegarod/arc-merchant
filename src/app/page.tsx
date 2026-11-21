@@ -33,6 +33,7 @@ interface ArticleStats {
   title: string
   views: number
   revenue: number
+  lastSale: number | null
 }
 
 interface MerchantWallet {
@@ -215,7 +216,7 @@ export default function MerchantDashboard() {
                         ...article,
                         sales: articleStat?.views || 0,
                         revenue: articleStat?.revenue || 0,
-                        lastSale: lastPayment?.timestamp || null,
+                        lastSale: articleStat?.lastSale ?? lastPayment?.timestamp ?? null,
                       }
                     })
                     .sort((a, b) => b.sales - a.sales)
