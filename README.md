@@ -4,7 +4,7 @@
 
 An AI agent discovers paywalled content, pays 0.01 USDC via x402, and receives it — autonomously, on-chain, no human approval. The merchant dashboard updates in real time as payments land.
 
-🌐 Live demo: https://arc-merchant-production.up.railway.app
+🌐 Live store: https://arc-merchant-live-production.up.railway.app (runs this exact code on Arc testnet)
 
 ![Arc Merchant Dashboard](public/dashboard.jpg)
 
@@ -117,6 +117,7 @@ Optional settings (all off by default):
 |---|---|
 | `DATABASE_URL` | Postgres connection string. Payment history is stored there and survives restarts and redeploys. Without it, history lives in memory. |
 | `ADMIN_TOKEN` | Enables `POST /api/stats/reset` and `POST /api/stats` (record a late tx hash), called with `Authorization: Bearer <token>`. Without it, both return 404. |
+| `PUBLIC_BASE_URL` | Public origin (e.g. `https://your-app.up.railway.app`) used as the payment request's resource URL. Unset = taken from the proxy's `X-Forwarded-Host`, falling back to the request URL. |
 | `ENABLE_BUYER_AGENT` | Set to `false` to remove the in-page buyer agent. It spends from the server's own wallets, so turn it off on any public deployment. |
 
 #### Payment history (optional Postgres)
