@@ -291,6 +291,12 @@ export default function MerchantDashboard() {
                             )}
                             <span>•</span>
                             <span>{formatTime(payment.timestamp)}</span>
+                            {payment.payer !== 'unknown' && (
+                              <>
+                                <span>•</span>
+                                <span className="font-mono">from {payment.payer}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                         <div className="text-right ml-4">

@@ -14,6 +14,13 @@ import { isBuyerAgentEnabled } from '@/lib/features'
 
 export const dynamic = 'force-dynamic'
 
+/** Payment history is public, so payer addresses are only ever returned shortened. */
+function shortenAddress(address: string): string {
+  return /^0x[0-9a-fA-F]{40}$/.test(address)
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : 'unknown'
+}
+
 export async function GET() {
   const stats = await getStats()
 
@@ -52,6 +59,7 @@ export async function GET() {
 
   return NextResponse.json({
     ...stats,
+    recentPayments: stats.recentPayments.map((p) => ({ ...p, payer: shortenAddress(p.payer) })),
     merchantWallet,
     onChainBalance,
     buyerAgentEnabled: isBuyerAgentEnabled(),
