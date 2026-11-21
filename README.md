@@ -74,6 +74,7 @@ The facilitator settles payments on-chain when agents pay for your content:
 ```
 src/servers/facilitator.ts   → Receives signed payments, settles on Arc blockchain
 src/app/api/article/         → x402-protected content endpoints
+src/app/api/health/          → monitoring: 200 if the facilitator and database answer, else 503
 src/app/page.tsx             → Merchant dashboard
 ```
 
