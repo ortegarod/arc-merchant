@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStats, shouldRefreshBalance, getCachedBalance, setCachedBalance, getCachedWallet, updatePaymentTxHash, recordBalanceFetchError } from '@/lib/stats'
 import { getMerchantWallet, getWalletBalance } from '@/lib/circle-wallet'
 import { asApiError } from '@/lib/errors'
+import { requireAdmin } from '@/lib/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,9 +59,13 @@ export async function GET() {
 /**
  * POST /api/stats - Update payment with transaction hash
  *
- * Called by MCP client after settlement to record the txHash.
+ * For recording a txHash that settled after the paid response was sent.
+ * Requires `Authorization: Bearer <ADMIN_TOKEN>`; disabled (404) when ADMIN_TOKEN is unset.
  */
 export async function POST(req: NextRequest) {
+  const denied = requireAdmin(req)
+  if (denied) return denied
+
   try {
     const { slug, payer, txHash } = await req.json()
 
