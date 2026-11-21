@@ -99,6 +99,8 @@ npm run hooks:install   # enable the commit and push checks in .githooks/
 
 Copy `.env.local.example` to `.env.local` and fill in:
 
+The Circle API key also picks the Arc network: a testnet key (`TEST_API_KEY:…`) runs everything on Arc testnet, a mainnet key (`LIVE_API_KEY:…`) on Arc mainnet. Chain id, RPC, explorer links, token addresses and the dashboard's Testnet/Mainnet badge all follow it. There is no separate network switch, so the key and the chain can't disagree.
+
 ```bash
 # Circle API credentials (https://console.circle.com)
 CIRCLE_API_KEY=
@@ -120,7 +122,7 @@ Optional settings (all off by default):
 |---|---|
 | `DATABASE_URL` | Postgres connection string. Payment history is stored there and survives restarts and redeploys. Without it, history lives in memory. |
 | `ADMIN_TOKEN` | Enables `POST /api/stats/reset` and `POST /api/stats` (record a late tx hash), called with `Authorization: Bearer <token>`. Without it, both return 404. |
-| `ARC_NETWORK` | `testnet` (default) or `mainnet`. Switches the chain id, RPC, explorer links, Circle blockchain code and token addresses everywhere, and the dashboard shows a Testnet/Mainnet badge. `ARC_RPC_URL` overrides the RPC. Mainnet needs a mainnet Circle API key and funded wallets. |
+| `ARC_RPC_URL` | Overrides the Arc RPC endpoint (e.g. a node provider URL). |
 | `PUBLIC_BASE_URL` | Public origin (e.g. `https://your-app.up.railway.app`) used as the payment request's resource URL. Unset = taken from the proxy's `X-Forwarded-Host`, falling back to the request URL. |
 | `ENABLE_BUYER_AGENT` | Set to `false` to remove the in-page buyer agent. It spends from the server's own wallets, so turn it off on any public deployment. |
 

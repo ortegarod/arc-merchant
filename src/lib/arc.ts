@@ -1,8 +1,12 @@
+import './env'
 import { defineChain } from 'viem'
 
 /**
- * Arc network selection. ARC_NETWORK=testnet (default) or mainnet sets the
- * chain, RPC, explorer, Circle blockchain code and token addresses.
+ * Arc network selection. The Circle API key decides it: TEST_API_KEY:… runs on
+ * Arc testnet, LIVE_API_KEY:… on Arc mainnet. Circle keys only work on their own
+ * network, so a separate network switch could only ever disagree with the key.
+ * No key means testnet (nothing can be signed without one anyway).
+ * This sets the chain, RPC, explorer, Circle blockchain code and token addresses.
  * Values from https://docs.arc.io/arc/references/rpc-endpoints and contract-addresses.
  */
 const NETWORKS = {
@@ -28,10 +32,18 @@ const NETWORKS = {
 
 export type ArcNetworkName = keyof typeof NETWORKS
 
+export function networkForKey(apiKey: string | undefined): ArcNetworkName {
+  const key = (apiKey || '').trim()
+  if (!key || key.startsWith('TEST_API_KEY:')) return 'testnet'
+  if (key.startsWith('LIVE_API_KEY:')) return 'mainnet'
+  throw new Error('CIRCLE_API_KEY must start with TEST_API_KEY: (testnet) or LIVE_API_KEY: (mainnet)')
+}
+
 function selectNetwork(): ArcNetworkName {
-  const v = (process.env.ARC_NETWORK || 'testnet').trim().toLowerCase()
-  if (v === 'testnet' || v === 'mainnet') return v
-  throw new Error(`ARC_NETWORK must be "testnet" or "mainnet", got "${v}"`)
+  if (process.env.ARC_NETWORK) {
+    throw new Error('ARC_NETWORK is no longer used: the Circle API key picks the network (TEST_ = testnet, LIVE_ = mainnet). Remove it.')
+  }
+  return networkForKey(process.env.CIRCLE_API_KEY)
 }
 
 export const ARC_NETWORK_NAME: ArcNetworkName = selectNetwork()

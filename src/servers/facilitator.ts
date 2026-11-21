@@ -2,7 +2,7 @@
  * Arc x402 Facilitator Server
  *
  * Based on x402 example: x402/examples/typescript/facilitator
- * Verifies and settles x402 payments on Arc (network chosen by ARC_NETWORK).
+ * Verifies and settles x402 payments on Arc (network chosen by the Circle API key).
  */
 
 import { x402Facilitator } from "@x402/core/facilitator";

@@ -48,7 +48,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     npx --no-install tsc --noEmit && echo "✓ typecheck"
     npx --no-install eslint . && echo "✓ lint"
     # The build only checks that Circle credentials are set, so placeholders are enough.
-    CIRCLE_API_KEY=build-placeholder CIRCLE_ENTITY_SECRET=build-placeholder NEXT_TELEMETRY_DISABLED=1 \
+    CIRCLE_API_KEY=TEST_API_KEY:build-placeholder CIRCLE_ENTITY_SECRET=build-placeholder NEXT_TELEMETRY_DISABLED=1 \
       npx --no-install next build > build.log 2>&1 || { tail -40 build.log >&2; echo "❌ build failed" >&2; exit 1; }
     echo "✓ build"
   )
